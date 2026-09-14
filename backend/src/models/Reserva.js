@@ -1,5 +1,15 @@
 class Reserva {
-    constructor(id, fecha, horario, estado, cliente, sector, paquete, precioTotal, anticipo) {
+    constructor(
+        id,
+        fecha,
+        horario,
+        estado,
+        cliente,
+        sector,
+        paquete,
+        precioTotal,
+        anticipo
+    ) {
         this.id = id;
         this.fecha = fecha;
         this.horario = horario;

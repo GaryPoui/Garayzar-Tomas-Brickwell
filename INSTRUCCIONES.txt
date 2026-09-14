@@ -1,0 +1,18 @@
+BRICKELL'S - ENTREGA MVC
+
+1. Descomprimir este ZIP en la raíz del repositorio.
+2. Si pregunta si querés sobrescribir backend/src/models/Reserva.js, aceptar.
+3. Entrar a la carpeta backend:
+   cd backend
+4. Instalar dependencias:
+   npm install
+5. Ejecutar:
+   npm start
+
+La API quedará disponible en:
+http://localhost:3000/api/reservas
+
+IMPORTANTE:
+El ZIP no elimina los otros modelos que ya existen en backend/src/models.
+Solo agrega la arquitectura y reemplaza Reserva.js por una versión equivalente
+formateada para esta entrega.
