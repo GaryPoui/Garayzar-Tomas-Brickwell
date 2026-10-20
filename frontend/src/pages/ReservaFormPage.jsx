@@ -1,0 +1,287 @@
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  CalendarDays,
+  Check,
+  CircleAlert,
+  CreditCard,
+  RefreshCw,
+  Save,
+  Users,
+} from 'lucide-react'
+import {
+  Button,
+  EmptyState,
+  Field,
+  LoadingState,
+  PageHeading,
+  StatusBadge,
+} from '../components/ui.jsx'
+import { useNotification, useReservas } from '../utils/applicationContext.js'
+import { crearReserva, modificarReserva, obtenerReserva } from '../services/reservaService.js'
+import {
+  ESTADOS,
+  fechaLegible,
+  fechaMinima,
+  moneda,
+  prepararReserva,
+  validarReserva,
+  valoresIniciales,
+} from '../utils/reservas.js'
+
+function ReservaForm({ original }) {
+  const [values, setValues] = useState(() => valoresIniciales(original))
+  const [errors, setErrors] = useState({})
+  const [busy, setBusy] = useState(false)
+  const form = useRef(null)
+  const notify = useNotification()
+  const { refresh } = useReservas()
+  const navigate = useNavigate()
+
+  function change(event) {
+    const { name, value } = event.target
+    setValues((current) => ({ ...current, [name]: value }))
+    setErrors((current) => ({
+      ...current,
+      [name]: undefined,
+      ...(name === 'precioTotal' ? { anticipo: undefined } : {}),
+    }))
+  }
+  function input(name) {
+    return {
+      id: name,
+      name,
+      value: values[name],
+      onChange: change,
+      error: errors[name],
+      required: true,
+    }
+  }
+  async function submit(event) {
+    event.preventDefault()
+    if (busy) return
+    const failures = validarReserva(values, original)
+    setErrors(failures)
+    if (Object.keys(failures).length) {
+      notify('Revisá los campos señalados antes de guardar la reserva.', 'error')
+      form.current.elements.namedItem(Object.keys(failures)[0])?.focus()
+      return
+    }
+    setBusy(true)
+    try {
+      const datos = prepararReserva(values, original)
+      const saved = original
+        ? await modificarReserva(original.id, datos)
+        : await crearReserva(datos)
+      notify(`La reserva #${saved.id} se ${original ? 'actualizó' : 'creó'} correctamente.`)
+      refresh()
+      navigate('/reservas')
+    } catch (error) {
+      notify(error.message, 'error')
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form ref={form} className="reservation-form" onSubmit={submit} noValidate aria-busy={busy}>
+      <div className="form-main">
+        <fieldset disabled={busy}>
+          <legend>
+            <span className="step-number">01</span> La reserva{' '}
+            <CalendarDays size={20} aria-hidden="true" />
+          </legend>
+          <div className="form-grid">
+            <Field
+              {...input('fecha')}
+              label="Fecha"
+              type="date"
+              min={
+                original?.fecha && original.fecha < fechaMinima() ? original.fecha : fechaMinima()
+              }
+            />
+            <Field {...input('horario')} label="Horario" type="time" />
+          </div>
+          {original && (
+            <Field {...input('estado')} label="Estado">
+              {Object.entries(ESTADOS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Field>
+          )}
+        </fieldset>
+        <fieldset disabled={busy}>
+          <legend>
+            <span className="step-number">02</span> Cliente y experiencia{' '}
+            <Users size={20} aria-hidden="true" />
+          </legend>
+          <div className="form-grid three-columns">
+            <Field
+              {...input('cliente')}
+              label="ID del cliente"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="Ej.: 1"
+            />
+            <Field
+              {...input('sector')}
+              label="ID del sector"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="Ej.: 2"
+            />
+            <Field
+              {...input('paquete')}
+              label="ID del paquete"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="Ej.: 1"
+            />
+          </div>
+        </fieldset>
+        <fieldset disabled={busy}>
+          <legend>
+            <span className="step-number">03</span> Importes{' '}
+            <CreditCard size={20} aria-hidden="true" />
+          </legend>
+          <div className="form-grid">
+            <Field
+              {...input('precioTotal')}
+              label="Precio total (ARS)"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0,00"
+            />
+            <Field
+              {...input('anticipo')}
+              label="Anticipo (ARS)"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0,00"
+            />
+          </div>
+        </fieldset>
+        <div className="form-actions">
+          <Button variant="secondary" disabled={busy} onClick={() => navigate('/reservas')}>
+            Cancelar
+          </Button>
+          <Button type="submit" icon={Save} busy={busy}>
+            {busy ? 'Guardando...' : original ? 'Guardar cambios' : 'Crear reserva'}
+          </Button>
+        </div>
+      </div>
+      <aside className="form-summary" aria-label="Resumen de la reserva">
+        <div className="summary-title">
+          <h2>Tu reserva</h2>
+          <ArrowUpRight size={22} aria-hidden="true" />
+        </div>
+        <StatusBadge estado={values.estado} />
+        <div className="summary-date">
+          <CalendarDays size={23} aria-hidden="true" />
+          <div>
+            <strong>
+              {values.fecha && !Number.isNaN(new Date(`${values.fecha}T12:00:00`).getTime())
+                ? fechaLegible(values.fecha)
+                : 'Fecha por definir'}
+            </strong>
+            <span>{values.horario ? `${values.horario} h` : 'Horario por definir'}</span>
+          </div>
+        </div>
+        <dl className="summary-amounts">
+          <div>
+            <dt>Precio total</dt>
+            <dd>{moneda(values.precioTotal)}</dd>
+          </div>
+          <div>
+            <dt>Anticipo</dt>
+            <dd>{moneda(values.anticipo)}</dd>
+          </div>
+          <div className="summary-balance">
+            <dt>Saldo pendiente</dt>
+            <dd>{moneda(Number(values.precioTotal) - Number(values.anticipo))}</dd>
+          </div>
+        </dl>
+        <div className="summary-foot">
+          <Check size={16} aria-hidden="true" />
+          <span>{original ? `Reserva #${original.id}` : 'Estado inicial: pendiente'}</span>
+        </div>
+      </aside>
+    </form>
+  )
+}
+
+function ReservaFormPageContent({ id }) {
+  const [original, setOriginal] = useState(null)
+  const [loading, setLoading] = useState(Boolean(id))
+  const [error, setError] = useState('')
+  const [retry, setRetry] = useState(0)
+  const notify = useNotification()
+  const reportError = useEffectEvent((message) => notify(message, 'error'))
+  useEffect(() => {
+    if (!id) return
+    const controller = new AbortController()
+    obtenerReserva(id, { signal: controller.signal })
+      .then((data) => {
+        if (!controller.signal.aborted) setOriginal(data)
+      })
+      .catch((failure) => {
+        if (!controller.signal.aborted) {
+          setError(failure.message)
+          reportError(failure.message)
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => controller.abort()
+  }, [id, retry])
+
+  return (
+    <>
+      <Link className="back-link" to="/reservas">
+        <ArrowLeft size={17} aria-hidden="true" />
+        Volver a reservas
+      </Link>
+      <PageHeading
+        eyebrow={id ? `RESERVA #${id}` : 'UNA NUEVA NOCHE'}
+        title={id ? 'Editar reserva' : 'Nueva reserva'}
+        description={
+          id
+            ? 'Actualizá los datos de la reserva.'
+            : 'Los detalles de una buena noche empiezan acá.'
+        }
+      />
+      {loading ? (
+        <LoadingState label="Cargando reserva..." />
+      ) : error ? (
+        <EmptyState icon={CircleAlert} title="No pudimos abrir la reserva" description={error}>
+          <Button
+            icon={RefreshCw}
+            onClick={() => {
+              setError('')
+              setLoading(true)
+              setRetry((value) => value + 1)
+            }}
+          >
+            Reintentar
+          </Button>
+        </EmptyState>
+      ) : (
+        <ReservaForm key={id || 'nueva'} original={original} />
+      )}
+    </>
+  )
+}
+
+export default function ReservaFormPage() {
+  const { id } = useParams()
+  return <ReservaFormPageContent key={id || 'nueva'} id={id} />
+}
