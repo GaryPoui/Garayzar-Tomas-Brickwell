@@ -27,4 +27,4 @@ npm --prefix frontend run dev
 
 Frontend: http://localhost:5173. API: http://localhost:3000/api/reservas.
 
-Las reservas se guardan en memoria y se pierden al reiniciar el backend. El boceto original no está incluido en los archivos disponibles: la propuesta visual y la verificación pendiente de fidelidad están documentadas en el [frontend](frontend/README.md).
+Las reservas se guardan en memoria y se pierden al reiniciar el backend. El rediseño y su relación con los documentos Word están documentados en el [frontend](frontend/README.md) y en la [revisión visual](frontend/design-review/README.md).

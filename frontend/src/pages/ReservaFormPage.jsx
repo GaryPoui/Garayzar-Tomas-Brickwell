@@ -2,7 +2,6 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
-  ArrowUpRight,
   CalendarDays,
   Check,
   CircleAlert,
@@ -89,13 +88,13 @@ function ReservaForm({ original }) {
       <div className="form-main">
         <fieldset disabled={busy}>
           <legend>
-            <span className="step-number">01</span> La reserva{' '}
-            <CalendarDays size={20} aria-hidden="true" />
+            Fecha y horario <CalendarDays size={20} aria-hidden="true" />
           </legend>
           <div className="form-grid">
             <Field
               {...input('fecha')}
               label="Fecha"
+              hint="Para nuevas reservas, elegí una fecha desde mañana."
               type="date"
               min={
                 original?.fecha && original.fecha < fechaMinima() ? original.fecha : fechaMinima()
@@ -115,13 +114,16 @@ function ReservaForm({ original }) {
         </fieldset>
         <fieldset disabled={busy}>
           <legend>
-            <span className="step-number">02</span> Cliente y experiencia{' '}
-            <Users size={20} aria-hidden="true" />
+            Cliente, sector y paquete <Users size={20} aria-hidden="true" />
           </legend>
+          <p className="fieldset-description">
+            Ingresá los identificadores de tus registros. Revisalos antes de guardar.
+          </p>
           <div className="form-grid three-columns">
             <Field
               {...input('cliente')}
               label="ID del cliente"
+              hint="Identificador del cliente registrado."
               type="number"
               min="1"
               step="1"
@@ -130,6 +132,7 @@ function ReservaForm({ original }) {
             <Field
               {...input('sector')}
               label="ID del sector"
+              hint="Identificador del sector de la reserva."
               type="number"
               min="1"
               step="1"
@@ -138,6 +141,7 @@ function ReservaForm({ original }) {
             <Field
               {...input('paquete')}
               label="ID del paquete"
+              hint="Identificador del paquete de consumición."
               type="number"
               min="1"
               step="1"
@@ -147,8 +151,7 @@ function ReservaForm({ original }) {
         </fieldset>
         <fieldset disabled={busy}>
           <legend>
-            <span className="step-number">03</span> Importes{' '}
-            <CreditCard size={20} aria-hidden="true" />
+            Importes <CreditCard size={20} aria-hidden="true" />
           </legend>
           <div className="form-grid">
             <Field
@@ -169,19 +172,10 @@ function ReservaForm({ original }) {
             />
           </div>
         </fieldset>
-        <div className="form-actions">
-          <Button variant="secondary" disabled={busy} onClick={() => navigate('/reservas')}>
-            Cancelar
-          </Button>
-          <Button type="submit" icon={Save} busy={busy}>
-            {busy ? 'Guardando...' : original ? 'Guardar cambios' : 'Crear reserva'}
-          </Button>
-        </div>
       </div>
       <aside className="form-summary" aria-label="Resumen de la reserva">
         <div className="summary-title">
-          <h2>Tu reserva</h2>
-          <ArrowUpRight size={22} aria-hidden="true" />
+          <h2>Resumen de la reserva</h2>
         </div>
         <StatusBadge estado={values.estado} />
         <div className="summary-date">
@@ -214,6 +208,14 @@ function ReservaForm({ original }) {
           <span>{original ? `Reserva #${original.id}` : 'Estado inicial: pendiente'}</span>
         </div>
       </aside>
+      <div className="form-actions">
+        <Button variant="secondary" disabled={busy} onClick={() => navigate('/reservas')}>
+          Cancelar
+        </Button>
+        <Button type="submit" icon={Save} busy={busy}>
+          {busy ? 'Guardando...' : original ? 'Guardar cambios' : 'Crear reserva'}
+        </Button>
+      </div>
     </form>
   )
 }
@@ -251,12 +253,11 @@ function ReservaFormPageContent({ id }) {
         Volver a reservas
       </Link>
       <PageHeading
-        eyebrow={id ? `RESERVA #${id}` : 'UNA NUEVA NOCHE'}
         title={id ? 'Editar reserva' : 'Nueva reserva'}
         description={
           id
             ? 'Actualizá los datos de la reserva.'
-            : 'Los detalles de una buena noche empiezan acá.'
+            : 'Definí la fecha, las referencias y los importes para registrar la reserva.'
         }
       />
       {loading ? (

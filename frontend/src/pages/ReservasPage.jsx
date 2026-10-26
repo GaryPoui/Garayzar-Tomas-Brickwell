@@ -2,7 +2,6 @@ import { useDeferredValue, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   ArrowDownLeft,
-  ArrowUpRight,
   CalendarCheck2,
   CalendarDays,
   ChevronLeft,
@@ -47,7 +46,7 @@ function Summary({ reservas, unavailable }) {
     {
       label: 'Confirmadas y activas',
       value: reservas.filter((reserva) => ['CONFIRMADA', 'ACTIVA'].includes(reserva.estado)).length,
-      detail: 'Todo listo para la noche',
+      detail: 'Con estado confirmada o activa',
       icon: CalendarCheck2,
       tone: 'green',
     },
@@ -111,12 +110,11 @@ export default function ReservasPage({ agenda = false }) {
   return (
     <>
       <PageHeading
-        eyebrow="CADA NOCHE, BIEN ORGANIZADA"
         title={agenda ? 'Agenda de reservas' : 'Reservas'}
         description={
           agenda
-            ? "Las próximas noches de Brickell's, fecha por fecha."
-            : 'Todo listo para recibir a tus clientes.'
+            ? 'Consultá las reservas desde hoy, ordenadas por fecha y horario.'
+            : 'Organizá cada llegada. Todos los detalles, en un solo lugar.'
         }
       >
         <Button variant="secondary" icon={RefreshCw} busy={loading} onClick={refresh}>
@@ -132,10 +130,9 @@ export default function ReservasPage({ agenda = false }) {
         <div className="agenda-banner">
           <CalendarDays size={28} aria-hidden="true" />
           <div>
-            <strong>Las noches que vienen</strong>
+            <strong>Tu próxima jornada, a la vista</strong>
             <span>Desde hoy · Sin reservas canceladas</span>
           </div>
-          <ArrowUpRight size={25} aria-hidden="true" />
         </div>
       )}
       <section className="reservations-section" aria-labelledby="list-title">
@@ -144,18 +141,20 @@ export default function ReservasPage({ agenda = false }) {
             <h2 id="list-title">{agenda ? 'Próximas reservas' : 'Todas las reservas'}</h2>
             <span className="count-badge">{loading || error ? '...' : upcoming.length}</span>
           </div>
-          <span className="section-caption">{agenda ? 'POR FECHA' : 'REGISTRO GENERAL'}</span>
+          <span className="section-caption">
+            {agenda ? 'Orden cronológico' : 'Registro completo'}
+          </span>
         </div>
         <div className="filters">
           <div className="search-field">
-            <label className="sr-only" htmlFor="buscar">
-              Buscar por reserva, cliente, sector o paquete
-            </label>
+            <label htmlFor="buscar">Buscar reserva</label>
             <Search size={19} aria-hidden="true" />
             <input
               id="buscar"
+              name="buscar"
+              autoComplete="off"
               type="search"
-              placeholder="Buscar por reserva, cliente, sector..."
+              placeholder="ID de reserva, cliente, sector o paquete…"
               value={search}
               onChange={(event) => setFilter('buscar', event.target.value)}
             />
@@ -186,6 +185,19 @@ export default function ReservasPage({ agenda = false }) {
             <IconButton label="Limpiar filtros" icon={X} onClick={() => setParams({})} />
           )}
         </div>
+        {hasFilters && (
+          <div className="active-filters" aria-label="Filtros activos">
+            <span>
+              {filtered.length} {filtered.length === 1 ? 'resultado' : 'resultados'}
+            </span>
+            {search && <span className="filter-chip">Búsqueda: {search}</span>}
+            {estado && <span className="filter-chip">Estado: {ESTADOS[estado] || estado}</span>}
+            {fecha && <span className="filter-chip">Fecha: {fechaLegible(fecha)}</span>}
+            <button type="button" className="text-button" onClick={() => setParams({})}>
+              Limpiar filtros
+            </button>
+          </div>
+        )}
         {loading ? (
           <LoadingState />
         ) : error ? (
@@ -201,7 +213,7 @@ export default function ReservasPage({ agenda = false }) {
                 ? 'No hay coincidencias'
                 : agenda
                   ? 'La agenda está libre'
-                  : 'Tu próxima noche empieza acá'
+                  : 'Todo empieza con una reserva'
             }
             description={
               hasFilters
@@ -267,10 +279,7 @@ export default function ReservasPage({ agenda = false }) {
           </>
         )}
       </section>
-      <div className="bottom-note">
-        <span className="small-mark">b.</span>
-        <span>Buenos momentos. Noches memorables.</span>
-      </div>
+
       {detailId !== null && (
         <ReservationDetail key={detailId} id={detailId} onClose={() => setDetailId(null)} />
       )}

@@ -52,11 +52,25 @@ export function Field({ label, id, error, hint, children, ...props }) {
         {props.required && <span aria-hidden="true"> *</span>}
       </label>
       {children ? (
-        <select id={id} aria-invalid={Boolean(error)} aria-describedby={describedBy} {...props}>
+        <select
+          id={id}
+          name={id}
+          autoComplete="off"
+          aria-invalid={Boolean(error)}
+          aria-describedby={describedBy}
+          {...props}
+        >
           {children}
         </select>
       ) : (
-        <input id={id} aria-invalid={Boolean(error)} aria-describedby={describedBy} {...props} />
+        <input
+          id={id}
+          name={id}
+          autoComplete="off"
+          aria-invalid={Boolean(error)}
+          aria-describedby={describedBy}
+          {...props}
+        />
       )}
       {hint && (
         <span className="field-hint" id={`${id}-hint`}>

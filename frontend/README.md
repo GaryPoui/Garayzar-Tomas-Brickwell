@@ -78,13 +78,17 @@ Reiniciar Vite después de cambiarlas. `API_PROXY_TARGET` solo configura el prox
 - Estados con texto además de color, iconos con nombres accesibles, imagen con alternativa textual y respeto por movimiento reducido.
 - Diseño responsivo probado entre 320 y 1440 px; auditoría automatizada axe para reglas WCAG A/AA en los estados cubiertos. No reemplaza una auditoría manual integral.
 
-## Diseño y boceto pendiente
+## Diseño e identidad
 
-Se revisaron los 29 archivos originales del repositorio, incluidos todos los modelos y la documentación. La carpeta `frontend` estaba vacía; no había un boceto, enlace al diseño, logotipo ni imágenes del negocio entre los archivos disponibles. Por eso **no es posible certificar fidelidad al boceto original**. Esta propuesta debe contrastarse con ese material cuando se incorpore, antes de dar por cumplido ese criterio de evaluación.
+El rediseño de octubre de 2026 aplica la dirección azul tinta y cobre del brief: navegación `#1A2540`, acciones `#A7432D`, fondo `#F4F6FA` y superficies blancas. Las variables semánticas `--color-*` están en `src/styles/global.css`; `layout.css` define la estructura y `reservas.css` las vistas operativas. Los estados tienen etiquetas y colores propios; eliminar usa un tratamiento carmesí distinto de la acción principal.
 
-La propuesta conserva el nombre Brickell's y el dominio de pub/boliche: marca tipográfica, navegación oscura, superficies claras, acción principal verde lima y tonos diferenciados por estado. La vista inicial es la gestión de reservas, no una landing. Las filas se reorganizan en móvil y los formularios tienen un resumen de importes. Los estilos y recursos están separados para permitir adaptar el diseño sin cambiar la integración.
+Manrope se sirve localmente para datos y formularios. La marca usa Georgia, con una referencia tipográfica al rótulo fotografiado en la investigación del local. La foto de ambientación anterior ya no se muestra. No se agregaron dependencias ni recursos remotos.
 
-La fotografía `src/assets/bar.jpg` es de ambientación y **no representa una foto verificada del local**. Fuente: [Unsplash](https://images.unsplash.com/photo-1514933651103-005eec06c04b). Las tipografías Manrope y Barlow Condensed se sirven localmente mediante Fontsource; los iconos son de Lucide.
+El listado reúne búsqueda, fecha y estado, muestra los filtros activos y conserva los parámetros en la URL. La agenda agrupa por fecha las reservas desde hoy sin canceladas. El formulario organiza fecha/horario, referencias e importes, con un resumen que pasa debajo de los campos en móvil. Los IDs se explican sin inventar catálogos.
+
+Se leyeron los tres Word incorporados al repositorio y sus imágenes, además del modelo del dominio. El entregable visual anterior describe una landing pública y contiene un mockup incrustado; el brief nuevo prioriza el espacio de gestión y reemplaza esa dirección estética. El HTML mencionado en el Word no está entre los archivos del proyecto. El documento final describe funciones futuras que la API todavía no implementa, incluidos autenticación, eventos, disponibilidad y pagos.
+
+La dirección, las referencias consultadas y las limitaciones están documentadas en [design-review/README.md](design-review/README.md). Allí también se enlazan las capturas del rediseño.
 
 ## Alcance del backend
 

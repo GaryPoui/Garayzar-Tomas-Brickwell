@@ -138,7 +138,14 @@ test('paginación, filtros y disposición sin desbordes en móvil y escritorio',
   page,
   request,
 }, testInfo) => {
-  for (let index = 1; index <= 9; index++) await createReserva(request, { cliente: index })
+  const states = ['PENDIENTE', 'CONFIRMADA', 'ACTIVA', 'FINALIZADA', 'CANCELADA']
+  for (let index = 1; index <= 9; index++) {
+    const reserva = await createReserva(request, { cliente: index })
+    const response = await request.put(`/api/reservas/${reserva.id}`, {
+      data: { estado: states[(index - 1) % states.length] },
+    })
+    expect(response.ok()).toBeTruthy()
+  }
   await page.goto('/reservas')
   await expect(page.locator('.reservation-row')).toHaveCount(8)
   await page.getByRole('button', { name: 'Página siguiente' }).click()
@@ -149,10 +156,34 @@ test('paginación, filtros y disposición sin desbordes en móvil y escritorio',
   await page.getByRole('button', { name: 'Limpiar filtros' }).first().click()
   for (const width of [320, 390, 768, 1280, 1440]) {
     await page.setViewportSize({ width, height: 900 })
+    await page.evaluate(() => window.scrollTo(0, 0))
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBeTruthy()
+    await expect(page.getByRole('heading', { name: 'Reservas', exact: true })).toBeVisible()
+    await expect(page.locator('.reservation-row')).toHaveCount(8)
     await page.screenshot({ path: testInfo.outputPath(`reservas-${width}.png`), fullPage: true })
+    await page.getByRole('link', { name: 'Agenda', exact: true }).click()
+    await expect(page.locator('.agenda-group')).toHaveCount(1)
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBeTruthy()
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await page.screenshot({ path: testInfo.outputPath(`agenda-${width}.png`), fullPage: true })
+    await page.getByRole('link', { name: 'Nueva reserva', exact: true }).first().click()
+    await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
+    await expect(page.locator('[aria-invalid="true"]')).toHaveCount(7)
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBeTruthy()
+    await page.getByRole('button', { name: 'Cerrar notificación' }).click()
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await page.screenshot({
+      path: testInfo.outputPath(`formulario-errores-${width}.png`),
+      fullPage: true,
+    })
+    await page.getByRole('link', { name: 'Reservas', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Reservas', exact: true })).toBeVisible()
   }
   await page.setViewportSize({ width: 390, height: 844 })
   await checkAccessibility(page)
@@ -164,10 +195,18 @@ test('paginación, filtros y disposición sin desbordes en móvil y escritorio',
   await page.screenshot({ path: testInfo.outputPath('formulario-mobile.png'), fullPage: true })
 })
 
-test('accesibilidad del listado vacío y formulario con errores', async ({ page }) => {
+test('accesibilidad del listado vacío y formulario con errores', async ({ page }, testInfo) => {
   await page.goto('/reservas')
   await expect(page.getByText('Todavía no hay reservas registradas.')).toBeVisible()
   await checkAccessibility(page)
+  for (const width of [320, 390, 768, 1280, 1440]) {
+    await page.setViewportSize({ width, height: 900 })
+    await page.evaluate(() => window.scrollTo(0, 0))
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBeTruthy()
+    await page.screenshot({ path: testInfo.outputPath(`vacio-${width}.png`), fullPage: true })
+  }
   await page.getByRole('link', { name: 'Crear primera reserva' }).click()
   await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
   await checkAccessibility(page)
