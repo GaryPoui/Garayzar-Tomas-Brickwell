@@ -5,6 +5,8 @@ import '@fontsource/manrope/latin-500.css'
 import '@fontsource/manrope/latin-600.css'
 import '@fontsource/manrope/latin-700.css'
 import '@fontsource/manrope/latin-800.css'
+import '@fontsource/barlow-condensed/latin-600.css'
+import '@fontsource/barlow-condensed/latin-700.css'
 import './styles/global.css'
 import App from './App.jsx'
 

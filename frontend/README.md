@@ -1,6 +1,14 @@
-# Brickell's · Frontend de reservas
+# BRICKWEEL · Sitio público y reservas
 
 Aplicación React + Vite conectada con la API de la Entrega 2. El código de la aplicación y sus pruebas están dentro de `src`; la configuración de las herramientas permanece en la raíz de `frontend`.
+
+## Portada pública
+
+El inicio presenta BRICKWEEL con letras metálicas, fotografías de noche, una carta de tragos que se abre al hacer scroll y una sección final de reservas. El header enlaza La noche, Tragos y Reservas. La carta filtra por categoría y muestra fotos, ingredientes y descripciones; funciona con teclado y respeta la preferencia de movimiento reducido.
+
+`HomePage.jsx`, `CocktailMenu.jsx` y `home.css` contienen esta experiencia. Las cinco fotografías y las fuentes se sirven localmente. La selección de tragos es una propuesta editorial sin precios, pendiente de validación por el local. Las imágenes son de ambientación. Referencias, fuentes y decisiones: [landing-direction.md](design-review/landing-direction.md).
+
+La portada funciona sin la API. El formulario, el listado y la agenda conservan la integración real con Express. La navegación usa HashRouter para que los enlaces directos y la recarga funcionen en GitHub Pages: `/#/reservas`, `/#/agenda` y `/#/reservas/nueva` bajo la URL base del proyecto.
 
 ## Ejecución independiente
 
@@ -20,7 +28,7 @@ npm --prefix frontend install
 npm --prefix frontend run dev
 ```
 
-Abrir http://localhost:5173. Si el puerto está ocupado, Vite informa otro disponible. La API se inicia en http://localhost:3000. El frontend se ejecuta por separado: si la API no está disponible, informa el error y permite reintentar.
+Abrir http://localhost:5173/Garayzar-Tomas-Brickwell/. Si el puerto está ocupado, Vite informa otro disponible. La API se inicia en http://localhost:3000. Las páginas de reservas informan el error y permiten reintentar si la API no está disponible.
 
 ## Organización
 
@@ -80,19 +88,23 @@ Reiniciar Vite después de cambiarlas. `API_PROXY_TARGET` solo configura el prox
 
 ## Diseño e identidad
 
+La portada del 27/10/2026 sigue el nuevo pedido basado en DEEO Studio: negro, cromo, fotografías grandes y carta con aspecto de libro. Barlow Condensed para la marca, Georgia para los títulos editoriales y Manrope para navegación y textos. La marca visible es BRICKWEEL, según la escritura solicitada. Las capturas están en `design-review/home-*.png` y `design-review/carta-*.png`.
+
+### Panel de gestión existente
+
 El rediseño de octubre de 2026 aplica la dirección azul tinta y cobre del brief: navegación `#1A2540`, acciones `#A7432D`, fondo `#F4F6FA` y superficies blancas. Las variables semánticas `--color-*` están en `src/styles/global.css`; `layout.css` define la estructura y `reservas.css` las vistas operativas. Los estados tienen etiquetas y colores propios; eliminar usa un tratamiento carmesí distinto de la acción principal.
 
-Manrope se sirve localmente para datos y formularios. La marca usa Georgia, con una referencia tipográfica al rótulo fotografiado en la investigación del local. La foto de ambientación anterior ya no se muestra. No se agregaron dependencias ni recursos remotos.
+Manrope se sirve localmente para datos y formularios. La marca del panel usa Barlow Condensed y permite volver al sitio público. Las fotos se muestran en la portada. No se agregaron dependencias nuevas.
 
 El listado reúne búsqueda, fecha y estado, muestra los filtros activos y conserva los parámetros en la URL. La agenda agrupa por fecha las reservas desde hoy sin canceladas. El formulario organiza fecha/horario, referencias e importes, con un resumen que pasa debajo de los campos en móvil. Los IDs se explican sin inventar catálogos.
 
-Se leyeron los tres Word incorporados al repositorio y sus imágenes, además del modelo del dominio. El entregable visual anterior describe una landing pública y contiene un mockup incrustado; el brief nuevo prioriza el espacio de gestión y reemplaza esa dirección estética. El HTML mencionado en el Word no está entre los archivos del proyecto. El documento final describe funciones futuras que la API todavía no implementa, incluidos autenticación, eventos, disponibilidad y pagos.
+El panel se implementó a partir de los tres Word incorporados al repositorio, sus imágenes y el modelo del dominio. Ese alcance anterior priorizaba la gestión; el pedido del 27/10 añade la portada pública como inicio. El documento final también describe funciones futuras que la API todavía no implementa, incluidos autenticación, eventos, disponibilidad y pagos.
 
 La dirección, las referencias consultadas y las limitaciones están documentadas en [design-review/README.md](design-review/README.md). Allí también se enlazan las capturas del rediseño.
 
 ## Alcance del backend
 
-La API existente solamente implementa el CRUD de reservas. Clientes, sectores y paquetes se ingresan por ID porque no hay endpoints de catálogo. No se simulan eventos, entradas, carta, autenticación ni disponibilidad. Estos modelos existen, pero incorporar sus pantallas operativas requiere desarrollar sus APIs.
+La API existente solamente implementa el CRUD de reservas. Clientes, sectores y paquetes se ingresan por ID porque no hay endpoints de catálogo. La carta de la portada es contenido editorial estático. No se simulan eventos, entradas, autenticación ni disponibilidad. Incorporar la gestión de esos módulos requiere desarrollar sus APIs.
 
 Las reservas se almacenan en memoria: reiniciar el backend elimina los datos. El frontend no agrega persistencia local para ocultar esa limitación. La validación visual no sustituye las validaciones ni la autorización que necesite el servidor en producción.
 
@@ -120,4 +132,6 @@ npm run build
 npm run preview
 ```
 
-Preview sirve el build local y utiliza el mismo proxy, con la API encendida. Para un despliegue real, publicar `dist`, redirigir las rutas del frontend a `index.html` y configurar `/api` hacia el backend en el servidor web. El proxy de Vite no forma parte de los archivos estáticos generados.
+Preview sirve el build local y utiliza el mismo proxy, con la API encendida. `.github/workflows/pages.yml` compila y publica `frontend/dist` al actualizar `main`. Pages debe tener **GitHub Actions** como fuente y no necesita dominio personalizado. La base de Vite es `/Garayzar-Tomas-Brickwell/` y las rutas usan hash.
+
+GitHub Pages no ejecuta Express ni el proxy de Vite. Para habilitar reservas en producción, alojar la API por separado, permitir CORS desde `https://garypoui.github.io` y definir la variable del repositorio `VITE_API_URL` con su URL HTTPS terminada en `/api`. Volver a ejecutar el workflow después de cambiarla. Es una URL pública, no un secreto.

@@ -42,7 +42,7 @@ test('CRUD real, validaciones, filtros, agenda y confirmación accesible', async
 }) => {
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(error.message))
-  await page.goto('/reservas')
+  await page.goto('#/reservas')
   await expect(page.getByText('Todavía no hay reservas registradas.')).toBeVisible()
   await page.getByRole('link', { name: 'Crear primera reserva' }).click()
   await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
@@ -100,7 +100,7 @@ test('carga, error de API y reintento sin inventar datos', async ({ page }) => {
       json: { success: false, message: 'Servicio temporalmente no disponible.' },
     })
   })
-  await page.goto('/reservas')
+  await page.goto('#/reservas')
   await expect(page.getByText('Cargando reservas...')).toBeVisible()
   release()
   await expect(page.getByRole('alert')).toContainText('Servicio temporalmente no disponible.')
@@ -115,7 +115,7 @@ test('error de eliminación visible dentro del diálogo y recuperación', async 
   request,
 }) => {
   const reserva = await createReserva(request)
-  await page.goto('/reservas')
+  await page.goto('#/reservas')
   await page.getByRole('button', { name: `Eliminar reserva #${reserva.id}`, exact: true }).click()
   await page.route(`**/api/reservas/${reserva.id}`, async (route) => {
     if (route.request().method() !== 'DELETE') return route.continue()
@@ -146,7 +146,7 @@ test('paginación, filtros y disposición sin desbordes en móvil y escritorio',
     })
     expect(response.ok()).toBeTruthy()
   }
-  await page.goto('/reservas')
+  await page.goto('#/reservas')
   await expect(page.locator('.reservation-row')).toHaveCount(8)
   await page.getByRole('button', { name: 'Página siguiente' }).click()
   await expect(page.locator('.reservation-row')).toHaveCount(1)
@@ -196,7 +196,7 @@ test('paginación, filtros y disposición sin desbordes en móvil y escritorio',
 })
 
 test('accesibilidad del listado vacío y formulario con errores', async ({ page }, testInfo) => {
-  await page.goto('/reservas')
+  await page.goto('#/reservas')
   await expect(page.getByText('Todavía no hay reservas registradas.')).toBeVisible()
   await checkAccessibility(page)
   for (const width of [320, 390, 768, 1280, 1440]) {
@@ -218,7 +218,7 @@ test('cambiar de reserva por el historial recarga el formulario correcto', async
 }) => {
   const first = await createReserva(request, { cliente: 11 })
   const second = await createReserva(request, { cliente: 22 })
-  await page.goto(`/reservas/${first.id}/editar`)
+  await page.goto(`#/reservas/${first.id}/editar`)
   await expect(page.locator('#cliente')).toHaveValue('11')
   await page.getByRole('link', { name: 'Volver a reservas' }).click()
   await page.getByRole('link', { name: `Editar reserva #${second.id}` }).click()

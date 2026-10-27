@@ -1,6 +1,8 @@
 # Garayzar-Tomas-Brickwell
 
-Sistema de reservas para Brickell's Pub Bar & Night Club.
+Sitio público de BRICKWEEL Pub Bar & Night Club, con fotografías de ambientación, carta de tragos interactiva y acceso al sistema de reservas.
+
+Web: https://garypoui.github.io/Garayzar-Tomas-Brickwell/
 
 - [Backend](backend/README.md): API REST Express y arquitectura MVC de la Entrega 2.
 - [Frontend](frontend/README.md): aplicación React, integración, diseño, accesibilidad y pruebas.
@@ -25,6 +27,6 @@ npm --prefix backend start
 npm --prefix frontend run dev
 ```
 
-Frontend: http://localhost:5173. API: http://localhost:3000/api/reservas.
+Frontend: http://localhost:5173/Garayzar-Tomas-Brickwell/. API: http://localhost:3000/api/reservas.
 
-Las reservas se guardan en memoria y se pierden al reiniciar el backend. El rediseño y su relación con los documentos Word están documentados en el [frontend](frontend/README.md) y en la [revisión visual](frontend/design-review/README.md).
+Las reservas se guardan en memoria y se pierden al reiniciar el backend. GitHub Pages sirve la portada y la carta; las operaciones de reservas necesitan la API Express alojada por separado. La [dirección de la nueva portada](frontend/design-review/landing-direction.md) documenta la referencia, las imágenes y el alcance del contenido.

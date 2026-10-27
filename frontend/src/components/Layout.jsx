@@ -14,18 +14,25 @@ export default function Layout() {
         : 'Reservas'
   useEffect(() => {
     main.current?.focus({ preventScroll: true })
-    document.title = `${section} | Brickell's`
+    document.title = `${section} | BRICKWEEL`
   }, [pathname, section])
 
   return (
     <div className="app-layout">
-      <a href="#contenido" className="skip-link">
+      <a
+        href="#contenido"
+        className="skip-link"
+        onClick={(event) => {
+          event.preventDefault()
+          main.current?.focus()
+        }}
+      >
         Saltar al contenido
       </a>
       <aside className="sidebar">
-        <NavLink to="/reservas" className="brand" aria-label="Brickell's, reservas" translate="no">
+        <NavLink to="/" className="brand" aria-label="BRICKWEEL, volver al inicio" translate="no">
           <Wine size={25} strokeWidth={1.3} aria-hidden="true" />
-          <span className="brand-name">Brickell’s</span>
+          <span className="brand-name">BRICKWEEL</span>
           <span className="brand-caption">Pub bar & night club</span>
         </NavLink>
         <div className="sidebar-navigation">
@@ -63,14 +70,16 @@ export default function Layout() {
             <ChevronRight size={14} aria-hidden="true" />
             <strong>{section}</strong>
           </div>
-          <span className="topbar-location">Brickell’s / Necochea</span>
+          <NavLink to="/" className="topbar-location">
+            Volver al sitio
+          </NavLink>
         </header>
         <main id="contenido" ref={main} tabIndex={-1}>
           <Outlet />
         </main>
         <footer className="workspace-footer">
           <span>
-            Brickell’s <span className="footer-dot">/</span> Pub bar & night club
+            BRICKWEEL <span className="footer-dot">/</span> Pub bar & night club
           </span>
           <span>Necochea, Buenos Aires</span>
         </footer>
