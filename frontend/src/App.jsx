@@ -1,4 +1,4 @@
-import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
+import { HashRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
 import { NotificationProvider } from './components/Notifications.jsx'
 import { ReservasProvider } from './components/ReservasProvider.jsx'
@@ -8,7 +8,7 @@ import ReservaFormPage from './pages/ReservaFormPage.jsx'
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <NotificationProvider>
         <ReservasProvider>
           <Routes>
@@ -38,6 +38,6 @@ export default function App() {
           </Routes>
         </ReservasProvider>
       </NotificationProvider>
-    </BrowserRouter>
+    </HashRouter>
   )
 }

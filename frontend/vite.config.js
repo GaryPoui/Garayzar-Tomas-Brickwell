@@ -11,6 +11,8 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    // GitHub Pages serves this project from /<repository-name>/.
+    base: '/Garayzar-Tomas-Brickwell/',
     plugins: [react()],
     server: { proxy },
     preview: { proxy },
