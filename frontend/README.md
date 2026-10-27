@@ -115,6 +115,16 @@ Las pruebas E2E inician una API aislada en el puerto 3101 y otro Vite en el 5175
 
 ## Build y despliegue
 
+### GitHub Pages
+
+Antes del primer despliegue, una persona con permisos de administración debe abrir [Settings → Pages](https://github.com/GaryPoui/Garayzar-Tomas-Brickwell/settings/pages) y seleccionar **GitHub Actions** en **Build and deployment → Source**. Este paso habilita Pages; el `GITHUB_TOKEN` del workflow no puede habilitarlo automáticamente.
+
+El workflow `.github/workflows/pages.yml` comprueba la configuración de Pages, compila el frontend y publica `dist` al recibir cambios en `main`. También se puede ejecutar desde **Actions → Deploy frontend to GitHub Pages → Run workflow** después de habilitar Pages. Si el despliegue falla con `Failed to create deployment (status: 404)` y `Ensure GitHub Pages has been enabled`, revisar esa configuración antes de volver a ejecutarlo.
+
+GitHub Pages solo publica el frontend estático: no ejecuta el backend ni el proxy de Vite.
+
+### Build local y otros servidores
+
 ```bash
 npm run build
 npm run preview
