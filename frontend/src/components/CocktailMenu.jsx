@@ -193,6 +193,8 @@ export default function CocktailMenu() {
   const [category, setCategory] = useState('Todos')
   const [selectedId, setSelectedId] = useState(drinks[0].id)
   const [opened, setOpened] = useState(false)
+  const [openComplete, setOpenComplete] = useState(false)
+  const flap = useRef(null)
   const book = useRef(null)
   const cover = useRef(null)
   const returnToCover = useRef(false)
@@ -207,14 +209,26 @@ export default function CocktailMenu() {
   const pageDrinks = visibleDrinks.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize)
 
   useEffect(() => {
+    if (!opened) return
+    let active = true
+    const animations = flap.current.getAnimations()
+    Promise.all(animations.map((animation) => animation.finished.catch(() => {}))).then(() => {
+      if (active) setOpenComplete(true)
+    })
+    return () => {
+      active = false
+    }
+  }, [opened])
+
+  useEffect(() => {
     if (!opened && returnToCover.current) {
       returnToCover.current = false
       cover.current?.focus({ preventScroll: true })
     }
-    if (opened && document.activeElement === cover.current) {
+    if (openComplete && document.activeElement === cover.current) {
       book.current?.querySelector('.menu-close')?.focus({ preventScroll: true })
     }
-  }, [opened])
+  }, [opened, openComplete])
 
   function chooseDrink(id) {
     setSelectedId(id)
@@ -261,7 +275,10 @@ export default function CocktailMenu() {
         </p>
       </div>
 
-      <div className={`menu-book ${opened ? 'is-open' : ''}`} ref={book}>
+      <div
+        className={`menu-book ${opened ? 'is-open' : ''} ${openComplete ? 'is-ready' : ''}`}
+        ref={book}
+      >
         <div className="menu-scene">
           <img
             src={clubPhoto}
@@ -276,15 +293,16 @@ export default function CocktailMenu() {
           className="menu-close"
           aria-label="Cerrar carta"
           title="Cerrar carta"
-          hidden={!opened}
+          hidden={!openComplete}
           onClick={() => {
             returnToCover.current = true
+            setOpenComplete(false)
             setOpened(false)
           }}
         >
           <X size={18} aria-hidden="true" />
         </button>
-        <div className="menu-flap">
+        <div className="menu-flap" ref={flap}>
           <button
             type="button"
             className="menu-cover"
@@ -305,7 +323,7 @@ export default function CocktailMenu() {
           <div className="menu-cover-back" aria-hidden="true" />
         </div>
 
-        <div id="cocktail-pages" className="menu-pages" inert={!opened}>
+        <div id="cocktail-pages" className="menu-pages" inert={!openComplete}>
           <div className="menu-index">
             <div className="menu-page-top">
               <span>BRICKWELL</span>

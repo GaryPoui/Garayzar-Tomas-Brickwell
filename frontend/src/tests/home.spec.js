@@ -108,6 +108,8 @@ test('portada independiente, navegación por secciones y carta interactiva', asy
   })
   await page.goto('./')
   await expect(page.getByRole('heading', { name: 'BRICKWEEL', exact: true })).toBeVisible()
+  await expect(page.locator('.experience-copy')).toContainText('pub bar y boliche en Necochea')
+  await expect(page.locator('.gallery-story')).toHaveCount(2)
   await expect(page.locator('.menu-book')).not.toHaveClass(/is-open/)
   await expect(page.locator('.menu-cover strong')).toHaveText('BRICKWELL')
   await expect(page.locator('.menu-flap')).toHaveCSS('transition-duration', '2.8s')
@@ -164,7 +166,7 @@ test('portada independiente, navegación por secciones y carta interactiva', asy
   expect(errors).toEqual([])
 })
 
-test('tapa con bisagra, foto a la izquierda y cierre reversible', async ({ page }) => {
+test('tapa con bisagra y cruz oculta hasta completar la apertura', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.goto('./')
   const book = page.locator('.menu-book')
@@ -177,11 +179,26 @@ test('tapa con bisagra, foto a la izquierda y cierre reversible', async ({ page 
   const coverBounds = await cover.boundingBox()
   expect(Math.abs(photoBounds.x + photoBounds.width - coverBounds.x)).toBeLessThan(1)
   await cover.click()
+  await flap.evaluate((element) =>
+    element.getAnimations().forEach((animation) => {
+      animation.pause()
+      animation.currentTime = 1300
+    }),
+  )
+  await expect(close).toBeHidden()
+  await expect(page.locator('#cocktail-pages')).toHaveAttribute('inert', '')
+  await expect(book).not.toHaveClass(/is-ready/)
+  await flap.evaluate((element) =>
+    element.getAnimations().forEach((animation) => animation.finish()),
+  )
   await expect(flap).toHaveCSS(
     'transform',
     'matrix3d(-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1)',
   )
   await expect(page.locator('.menu-index')).toHaveCSS('opacity', '1')
+  await expect(close).toBeVisible()
+  await expect(close).toBeFocused()
+  await expect(page.locator('#cocktail-pages')).not.toHaveAttribute('inert', '')
   expect(Math.abs((await book.boundingBox()).height - closedBounds.height)).toBeLessThan(1)
   expect(
     await page.locator('.menu-index').evaluate((index) => {
@@ -195,6 +212,8 @@ test('tapa con bisagra, foto a la izquierda y cierre reversible', async ({ page 
   await expect(page.locator('.menu-index')).toBeHidden()
   await expect(close).toBeHidden()
   await cover.click()
+  await expect(close).toBeHidden()
+  await expect(book).toHaveClass(/is-ready/)
   await close.click()
   await expect(flap).toHaveCSS('transform', 'none')
   await expect(cover).toBeFocused()
@@ -219,6 +238,8 @@ test('menú móvil, teclado, fotos, movimiento reducido y accesibilidad', async 
   await page.getByRole('button', { name: 'Abrir carta de tragos' }).focus()
   await page.keyboard.press('Enter')
   await expect(page.locator('.menu-book')).toHaveClass(/is-open/)
+  await expect(page.locator('.menu-book')).toHaveClass(/is-ready/)
+  await expect(page.getByRole('button', { name: 'Cerrar carta' })).toBeVisible()
   await page.getByRole('button', { name: 'Página siguiente de la carta' }).focus()
   await page.keyboard.press('Enter')
   await expect(page.locator('.menu-page-navigation')).toContainText('Página 2 de 4')

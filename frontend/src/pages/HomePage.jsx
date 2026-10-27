@@ -210,13 +210,18 @@ export default function HomePage() {
               <br />
               se quedan con vos.
             </h2>
-            <p>
-              Un encuentro en la barra. Ese tema que te hace levantar. El último brindis que nunca
-              es el último.
-              <br />
-              <br />
-              En BRICKWEEL, el mejor plan es dejar que la noche pase.
-            </p>
+            <div className="experience-copy">
+              <p>
+                BRICKWEEL es un pub bar y boliche en Necochea donde la barra y la pista son parte
+                del mismo plan. Un lugar para encontrarte con amigos, compartir un trago y dejar que
+                la música marque el ritmo de la noche.
+              </p>
+              <p>
+                Podés empezar con una charla, descubrir una nueva mezcla o ir directo a bailar. No
+                todas las salidas tienen que ser iguales: a veces se festeja algo, otras veces
+                alcanza con estar juntos. Acá hay lugar para las dos.
+              </p>
+            </div>
           </div>
           <div className="night-gallery">
             <figure className="gallery-dance">
@@ -231,6 +236,11 @@ export default function HomePage() {
                 <span>Perdete en la música.</span>
                 <span>El resto puede esperar.</span>
               </figcaption>
+              <p className="gallery-story">
+                La pista es el punto de encuentro cuando la música sube. Luces, movimiento y ese
+                tema que cambia el ánimo del grupo: la noche se vive entre quienes llegan con vos y
+                quienes se suman en el camino.
+              </p>
             </figure>
             <figure className="gallery-bar">
               <img
@@ -246,6 +256,11 @@ export default function HomePage() {
                   <ArrowUpRight size={24} strokeWidth={1.2} />
                 </Link>
               </figcaption>
+              <p className="gallery-story">
+                En la barra conviven los cócteles clásicos, las mezclas frescas y las opciones sin
+                alcohol. También hay combos para la mesa. Un momento para elegir algo distinto,
+                seguir la conversación y volver a la pista cuando suene tu tema.
+              </p>
             </figure>
           </div>
           <p className="photo-note">Imágenes de ambientación.</p>
