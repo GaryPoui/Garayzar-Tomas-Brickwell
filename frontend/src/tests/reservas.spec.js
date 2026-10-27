@@ -43,6 +43,8 @@ test('CRUD real, validaciones, filtros, agenda y confirmación accesible', async
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(error.message))
   await page.goto('#/reservas')
+  await expect(page.locator('.app-layout')).toHaveCSS('color-scheme', 'dark')
+  await expect(page.locator('.management-navigation')).toBeVisible()
   await expect(page.getByText('Todavía no hay reservas registradas.')).toBeVisible()
   await page.getByRole('link', { name: 'Crear primera reserva' }).click()
   await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
@@ -61,8 +63,10 @@ test('CRUD real, validaciones, filtros, agenda y confirmación accesible', async
   const { data } = await (await request.get('/api/reservas')).json()
   const id = data[0].id
   await expect(page.getByText(`La reserva #${id} se creó correctamente.`)).toBeVisible()
+  await expect(page.locator('.notification')).toHaveCSS('background-color', 'rgb(20, 20, 22)')
   await page.getByRole('button', { name: `Ver reserva #${id}`, exact: true }).click()
   await expect(page.getByRole('dialog')).toContainText('35.000,00')
+  await expect(page.getByRole('dialog')).toHaveCSS('background-color', 'rgb(20, 20, 22)')
   await checkAccessibility(page)
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog')).toHaveCount(0)
@@ -148,6 +152,7 @@ test('paginación, filtros y disposición sin desbordes en móvil y escritorio',
   }
   await page.goto('#/reservas')
   await expect(page.locator('.reservation-row')).toHaveCount(8)
+  await checkAccessibility(page)
   await page.getByRole('button', { name: 'Página siguiente' }).click()
   await expect(page.locator('.reservation-row')).toHaveCount(1)
   await page.getByRole('button', { name: 'Página anterior' }).click()

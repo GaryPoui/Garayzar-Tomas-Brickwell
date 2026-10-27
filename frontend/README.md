@@ -4,9 +4,9 @@ Aplicación React + Vite conectada con la API de la Entrega 2. El código de la 
 
 ## Portada pública
 
-El inicio presenta BRICKWEEL con letras metálicas, fotografías de noche, una carta de tragos que se abre al hacer scroll y una sección final de reservas. El header enlaza La noche, Tragos y Reservas. La carta filtra por categoría y muestra fotos, ingredientes y descripciones; funciona con teclado y respeta la preferencia de movimiento reducido.
+El inicio presenta BRICKWEEL como una escena 3D casi de pantalla completa, con letras de frente negro, cantos iridiscentes y gran profundidad inspiradas en DEEO. Las letras se distribuyen en dos filas en horizontal y tres en vertical, con recortes intencionales en los bordes, y pasan detrás del header transparente, sin franja ni línea divisoria. El título se inclina suavemente hacia el mouse, incluso sobre la navegación, y vuelve al centro al salir de la escena; permanece inmóvil con movimiento reducido y en interacción táctil. Debajo continúan las fotografías de noche, una carta de tragos que se abre al hacer scroll y una sección final de reservas. El header enlaza La noche, Tragos y Reservas. La carta filtra por categoría y muestra fotos, ingredientes y descripciones; funciona con teclado y respeta la preferencia de movimiento reducido.
 
-`HomePage.jsx`, `CocktailMenu.jsx` y `home.css` contienen esta experiencia. Las cinco fotografías y las fuentes se sirven localmente. La selección de tragos es una propuesta editorial sin precios, pendiente de validación por el local. Las imágenes son de ambientación. Referencias, fuentes y decisiones: [landing-direction.md](design-review/landing-direction.md).
+`HomePage.jsx`, `HeroWordmark.jsx`, `CocktailMenu.jsx` y `home.css` contienen esta experiencia. Three.js y la fuente Helvetiker Bold local se cargan bajo demanda para el título; se conserva un nombre visible si WebGL no está disponible. El render se detiene cuando el título sale de pantalla o la pestaña queda oculta. Las cinco fotografías y las fuentes se sirven localmente. La selección de tragos es una propuesta editorial sin precios, pendiente de validación por el local. Las imágenes son de ambientación. Referencias, fuentes y decisiones: [landing-direction.md](design-review/landing-direction.md).
 
 La portada funciona sin la API. El formulario, el listado y la agenda conservan la integración real con Express. La navegación usa HashRouter para que los enlaces directos y la recarga funcionen en GitHub Pages: `/#/reservas`, `/#/agenda` y `/#/reservas/nueva` bajo la URL base del proyecto.
 
@@ -88,13 +88,13 @@ Reiniciar Vite después de cambiarlas. `API_PROXY_TARGET` solo configura el prox
 
 ## Diseño e identidad
 
-La portada del 27/10/2026 sigue el nuevo pedido basado en DEEO Studio: negro, cromo, fotografías grandes y carta con aspecto de libro. Barlow Condensed para la marca, Georgia para los títulos editoriales y Manrope para navegación y textos. La marca visible es BRICKWEEL, según la escritura solicitada. Las capturas están en `design-review/home-*.png` y `design-review/carta-*.png`.
+La portada del 27/10/2026 sigue el nuevo pedido basado en DEEO Studio: negro, volumen 3D con cantos de color sin acabado plateado, fotografías grandes y carta con aspecto de libro. Helvetiker Bold para el título 3D, Barlow Condensed para el resto de la marca, Georgia para los títulos editoriales y Manrope para navegación y textos. La carta destaca BRICKWELL en la tapa y abre en 2,8 segundos; con movimiento reducido no se anima. El resto del sitio conserva la marca BRICKWEEL. Las capturas están en `design-review/home-*.png` y `design-review/carta-*.png`.
 
-### Panel de gestión existente
+### Área de reservas
 
-El rediseño de octubre de 2026 aplica la dirección azul tinta y cobre del brief: navegación `#1A2540`, acciones `#A7432D`, fondo `#F4F6FA` y superficies blancas. Las variables semánticas `--color-*` están en `src/styles/global.css`; `layout.css` define la estructura y `reservas.css` las vistas operativas. Los estados tienen etiquetas y colores propios; eliminar usa un tratamiento carmesí distinto de la acción principal.
+El área de reservas continúa el lenguaje de la portada: fondo negro `#080809`, superficies `#141416`, texto claro y acciones verde pálido `#D3EFB1`. La navegación superior sustituye a la barra lateral, el resumen se presenta como una franja de datos y el listado y el formulario usan secciones abiertas, sin paneles blancos. Los diálogos y las notificaciones, incluidos los portales, comparten el tema oscuro. Las variables semánticas `--color-*` están en `src/styles/global.css`; `layout.css` define la estructura y `reservas.css` las vistas operativas. Los estados tienen etiquetas y colores propios; las acciones destructivas se distinguen en rosa.
 
-Manrope se sirve localmente para datos y formularios. La marca del panel usa Barlow Condensed y permite volver al sitio público. Las fotos se muestran en la portada. No se agregaron dependencias nuevas.
+Manrope se sirve localmente para datos y formularios, Georgia para títulos y Barlow Condensed para la marca, que permite volver al sitio público. Las fotos se muestran en la portada. Este rediseño de reservas no agrega dependencias ni modifica el contrato de la API.
 
 El listado reúne búsqueda, fecha y estado, muestra los filtros activos y conserva los parámetros en la URL. La agenda agrupa por fecha las reservas desde hoy sin canceladas. El formulario organiza fecha/horario, referencias e importes, con un resumen que pasa debajo de los campos en móvil. Los IDs se explican sin inventar catálogos.
 

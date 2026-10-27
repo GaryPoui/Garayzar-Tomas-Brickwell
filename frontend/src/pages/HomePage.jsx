@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { ArrowDown, ArrowUpRight, ArrowUp, Menu, X } from 'lucide-react'
 import CocktailMenu from '../components/CocktailMenu.jsx'
+import HeroWordmark from '../components/HeroWordmark.jsx'
 import djPhoto from '../assets/nightlife/dancefloor.jpg'
 import crowdPhoto from '../assets/nightlife/crowd.jpg'
 import barPhoto from '../assets/nightlife/club.jpg'
@@ -167,22 +168,11 @@ export default function HomePage() {
           aria-labelledby="hero-title"
           tabIndex={-1}
         >
+          <HeroWordmark />
           <div className="hero-caption">
             <span>Pub bar & night club</span>
             <span>El punto de encuentro.</span>
           </div>
-          <h1 id="hero-title" className="chrome-word" aria-label="BRICKWEEL" translate="no">
-            {'BRICKWEEL'.split('').map((letter, index) => (
-              <span
-                key={index}
-                data-letter={letter}
-                aria-hidden="true"
-                style={{ '--letter-index': index }}
-              >
-                {letter}
-              </span>
-            ))}
-          </h1>
           <div className="hero-photo">
             <img
               src={djPhoto}

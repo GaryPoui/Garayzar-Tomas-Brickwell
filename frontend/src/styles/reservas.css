@@ -1,11 +1,9 @@
 .summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  margin-bottom: 28px;
-  padding: 24px 0;
+  border-block: 1px solid var(--color-border);
+  margin-bottom: 36px;
+  padding: 26px 0;
 }
 .stat {
   min-width: 0;
@@ -29,10 +27,10 @@
   width: 17px;
 }
 .stat-amber svg {
-  color: #8a620d;
+  color: #edcd8b;
 }
 .stat-green svg {
-  color: #2a5097;
+  color: #c4b8ff;
 }
 .stat-rose svg {
   color: var(--color-primary);
@@ -40,10 +38,10 @@
 .stat > strong {
   display: block;
   margin: 10px 0 5px;
-  font-size: 30px;
-  font-weight: 800;
+  font-size: 34px;
+  font-weight: 500;
   line-height: 1.3;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
   overflow-wrap: anywhere;
   font-variant-numeric: tabular-nums;
 }
@@ -56,16 +54,14 @@
   font-size: 12px;
 }
 .reservations-section {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
+  min-width: 0;
 }
 .section-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 22px 24px;
+  padding: 8px 0 24px;
 }
 .section-heading > div {
   display: flex;
@@ -82,9 +78,9 @@
   min-width: 28px;
   height: 26px;
   padding: 0 7px;
-  background: #edf0f6;
-  color: #4a5870;
-  border-radius: 5px;
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+  border-radius: 4px;
   font-size: 12px;
   font-weight: 700;
 }
@@ -97,7 +93,7 @@
   grid-template-columns: minmax(150px, 1fr) 160px 160px auto;
   gap: 12px;
   align-items: end;
-  padding: 0 24px 24px;
+  padding: 0 0 24px;
 }
 .filters .field {
   gap: 8px;
@@ -250,14 +246,13 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 22px 24px;
-  background: var(--color-brand);
-  color: white;
-  border-radius: 10px;
+  padding: 22px 0;
+  border-block: 1px solid var(--color-border);
+  color: var(--color-text);
   margin-bottom: 24px;
 }
 .agenda-banner > svg {
-  color: #e6b6a1;
+  color: var(--color-primary);
 }
 .agenda-banner strong,
 .agenda-banner span {
@@ -268,7 +263,7 @@
   font-weight: 600;
 }
 .agenda-banner span {
-  color: #c5cddd;
+  color: var(--color-muted);
   margin-top: 4px;
   font-size: 13px;
 }
@@ -277,31 +272,29 @@
   align-items: center;
   gap: 12px;
   padding: 20px 24px;
-  background: #eaf0fa;
-  border-top: 1px solid #cdd8ed;
-  color: var(--color-brand);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text);
   font-size: 16px;
 }
 .agenda-group > h3 svg {
-  color: #315cb3;
+  color: #c4b8ff;
 }
 .agenda-group .table-heading {
   background: var(--color-surface);
 }
 .reservation-form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr) 340px;
   grid-template-areas: 'fields summary' 'actions summary';
-  gap: 0 28px;
+  gap: 0 64px;
   align-items: start;
 }
 .form-main {
   grid-area: fields;
   min-width: 0;
-  padding: 28px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 10px 10px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--color-border);
 }
 .reservation-form fieldset {
   margin: 0;
@@ -311,7 +304,7 @@
   min-width: 0;
 }
 .reservation-form fieldset:first-child {
-  padding-top: 8px;
+  padding-top: 28px;
 }
 .reservation-form fieldset:last-child {
   border-bottom: 0;
@@ -325,9 +318,9 @@
   align-items: center;
   gap: 10px;
   font-size: 17px;
-  font-weight: 800;
+  font-weight: 600;
   margin-bottom: 20px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 .reservation-form legend > svg {
   order: -1;
@@ -356,11 +349,9 @@
 }
 .form-actions {
   grid-area: actions;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-top: 0;
-  border-radius: 0 0 10px 10px;
-  padding: 24px 28px;
+  margin-top: 28px;
+  border-top: 1px solid var(--color-border);
+  padding: 24px 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -368,9 +359,10 @@
 }
 .form-summary {
   grid-area: summary;
-  background: var(--color-brand);
-  color: white;
-  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
   padding: 26px;
   position: sticky;
   top: 24px;
@@ -382,8 +374,9 @@
   border-bottom: 1px solid #ffffff26;
 }
 .summary-title h2 {
-  font-size: 18px;
-  font-weight: 600;
+  font-family: Georgia, serif;
+  font-size: 23px;
+  font-weight: 400;
 }
 .summary-date {
   display: flex;
@@ -393,7 +386,7 @@
   border-bottom: 1px solid #ffffff26;
 }
 .summary-date > svg {
-  color: #e6b6a1;
+  color: var(--color-primary);
 }
 .summary-date strong {
   display: block;
@@ -404,7 +397,7 @@
   display: block;
   margin-top: 6px;
   font-size: 13px;
-  color: #c5cddd;
+  color: var(--color-muted);
 }
 .summary-amounts {
   margin: 0;
@@ -420,7 +413,7 @@
 }
 .summary-amounts dt {
   font-size: 13px;
-  color: #c5cddd;
+  color: var(--color-muted);
 }
 .summary-amounts dd {
   margin: 0;
@@ -438,7 +431,8 @@
 .summary-balance dd {
   font-size: 30px;
   margin-top: 8px;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
+  color: var(--color-primary);
 }
 .summary-foot {
   margin-top: 24px;
@@ -446,10 +440,10 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #c5cddd;
+  color: var(--color-muted);
 }
 .summary-foot svg {
-  color: #e6b6a1;
+  color: var(--color-primary);
 }
 @media (max-width: 1390px) {
   .table-heading,
@@ -511,7 +505,6 @@
     grid-template-columns: minmax(0, 1fr) 270px;
     gap: 0 20px;
   }
-  .form-main,
   .form-summary {
     padding: 24px;
   }
@@ -527,8 +520,9 @@
   }
   .form-main,
   .form-actions {
-    border: 1px solid var(--color-border);
-    border-radius: 10px;
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    border-radius: 0;
   }
   .form-summary {
     position: static;
@@ -565,10 +559,10 @@
     display: none;
   }
   .section-heading {
-    padding: 20px 16px;
+    padding: 8px 0 20px;
   }
   .filters {
-    padding: 0 16px 20px;
+    padding: 0 0 20px;
     gap: 12px;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
@@ -620,7 +614,7 @@
     flex-wrap: wrap;
   }
   .form-main {
-    padding: 24px 20px;
+    padding: 0;
   }
   .form-grid,
   .three-columns {
@@ -628,7 +622,7 @@
     gap: 20px;
   }
   .form-actions {
-    padding: 20px;
+    padding: 20px 0;
     flex-wrap: wrap;
   }
   .form-actions .button {

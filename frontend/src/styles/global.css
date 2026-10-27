@@ -6,23 +6,24 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  color-scheme: light;
-  --color-bg: #f4f6fa;
-  --color-surface: #ffffff;
-  --color-surface-subtle: #f8f9fc;
-  --color-text: #182033;
-  --color-muted: #5c6475;
-  --color-brand: #1a2540;
-  --color-primary: #a7432d;
-  --color-primary-hover: #873421;
-  --color-border: #dde2eb;
-  --color-control-border: #838c9d;
-  --color-focus: #315cb3;
-  --color-accent-soft: #f7e8e1;
-  --color-danger: #b12240;
-  --color-danger-soft: #fcecf0;
-  --color-success: #21664b;
-  --radius: 8px;
+  color-scheme: dark;
+  --color-bg: #080809;
+  --color-surface: #141416;
+  --color-surface-subtle: #1d1d21;
+  --color-text: #f1efe9;
+  --color-muted: #aaa9b2;
+  --color-brand: #101012;
+  --color-primary: #d3efb1;
+  --color-primary-hover: #e6facf;
+  --color-on-primary: #14190f;
+  --color-border: #333338;
+  --color-control-border: #66666f;
+  --color-focus: #c4b8ff;
+  --color-accent-soft: #222c1c;
+  --color-danger: #ff9aab;
+  --color-danger-soft: #351c25;
+  --color-success: #a9dec4;
+  --radius: 4px;
   color: var(--color-text);
   background: var(--color-bg);
 }
@@ -146,7 +147,7 @@ main:focus {
 }
 .button-primary {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-on-primary);
 }
 .button-primary:hover:not(:disabled) {
   background: var(--color-primary-hover);
@@ -162,10 +163,10 @@ main:focus {
 }
 .button-danger {
   background: var(--color-danger);
-  color: white;
+  color: var(--color-on-primary);
 }
 .button-danger:hover:not(:disabled) {
-  background: #8c1832;
+  background: #ffb9c5;
 }
 .icon-button {
   display: inline-flex;
@@ -181,7 +182,7 @@ main:focus {
   background: transparent;
 }
 .icon-button:hover:not(:disabled) {
-  background: #e9edf5;
+  background: var(--color-surface-subtle);
   color: var(--color-text);
 }
 .danger-icon:hover:not(:disabled) {
@@ -238,7 +239,7 @@ input::placeholder {
 }
 input:hover,
 select:hover {
-  border-color: var(--color-brand);
+  border-color: var(--color-text);
 }
 input:disabled,
 select:disabled {
@@ -270,8 +271,8 @@ select:disabled {
   line-height: 1.6;
   font-weight: 700;
   white-space: nowrap;
-  background: #edf0f6;
-  color: #4a5870;
+  background: var(--color-surface-subtle);
+  color: var(--color-muted);
 }
 .status > span {
   width: 6px;
@@ -280,29 +281,29 @@ select:disabled {
   background: currentColor;
 }
 .status-pendiente {
-  background: #fff4db;
-  color: #795409;
-  border-color: #eed9ab;
+  background: #30291a;
+  color: #edcd8b;
+  border-color: #655536;
 }
 .status-confirmada {
-  background: #eaf0ff;
-  color: #2a5097;
-  border-color: #ccdaef;
+  background: #292337;
+  color: #d2c0fa;
+  border-color: #594971;
 }
 .status-activa {
-  background: #e6f3ed;
-  color: #21664b;
-  border-color: #bedccc;
+  background: #1c2c25;
+  color: #a9dec4;
+  border-color: #3c6350;
 }
 .status-finalizada {
-  background: #eef0f5;
-  color: #535f74;
-  border-color: #d7dce6;
+  background: #26262b;
+  color: #c2c1ca;
+  border-color: #505059;
 }
 .status-cancelada {
-  background: #fcecf0;
-  color: #a12340;
-  border-color: #f2cbd5;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  border-color: #714251;
 }
 .loading-state {
   min-height: 260px;
@@ -335,7 +336,7 @@ select:disabled {
   background: var(--color-surface-subtle);
   color: var(--color-primary);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 4px;
 }
 .empty-icon svg {
   width: 34px;
@@ -362,12 +363,13 @@ select:disabled {
   max-height: calc(100dvh - 48px);
   padding: 0;
   border: 1px solid var(--color-border);
-  border-radius: 14px;
-  box-shadow: 0 24px 100px #111b3540;
+  border-radius: 8px;
+  box-shadow: 0 24px 100px #0009;
   overscroll-behavior: contain;
 }
 .modal::backdrop {
-  background: #101a31a6;
+  background: #080809c9;
+  backdrop-filter: blur(6px);
 }
 .modal-content {
   padding: 28px;
@@ -382,7 +384,10 @@ select:disabled {
   border-bottom: 1px solid var(--color-border);
 }
 .modal-heading h2 {
+  font-family: Georgia, serif;
   font-size: 24px;
+  font-weight: 400;
+  letter-spacing: 0;
 }
 .modal-actions {
   display: flex;

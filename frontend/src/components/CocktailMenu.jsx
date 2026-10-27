@@ -166,12 +166,8 @@ export default function CocktailMenu() {
           tabIndex={opened ? -1 : 0}
           aria-hidden={opened || undefined}
         >
-          <span>BRICKWEEL</span>
-          <strong>
-            La
-            <br />
-            <i>carta.</i>
-          </strong>
+          <span>La carta</span>
+          <strong>BRICKWELL</strong>
           <span>
             Deslizá para descubrir <Plus size={20} aria-hidden="true" />
           </span>
@@ -180,7 +176,7 @@ export default function CocktailMenu() {
         <div id="cocktail-pages" className="menu-pages" inert={!opened}>
           <div className="menu-index">
             <div className="menu-page-top">
-              <span>BRICKWEEL</span>
+              <span>BRICKWELL</span>
               <span>Bar & night club</span>
             </div>
             <h3>La carta.</h3>

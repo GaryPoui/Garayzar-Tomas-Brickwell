@@ -1,6 +1,13 @@
 import { useEffect, useRef } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { CalendarDays, CalendarPlus, ChevronRight, ListFilter, MapPin, Wine } from 'lucide-react'
+import {
+  ArrowUpRight,
+  Asterisk,
+  CalendarDays,
+  CalendarPlus,
+  ChevronRight,
+  ListFilter,
+} from 'lucide-react'
 
 export default function Layout() {
   const { pathname } = useLocation()
@@ -29,51 +36,41 @@ export default function Layout() {
       >
         Saltar al contenido
       </a>
-      <aside className="sidebar">
+      <header className="management-header">
         <NavLink to="/" className="brand" aria-label="BRICKWEEL, volver al inicio" translate="no">
-          <Wine size={25} strokeWidth={1.3} aria-hidden="true" />
-          <span className="brand-name">BRICKWEEL</span>
+          <span className="brand-name">
+            BRICKWEEL
+            <Asterisk size={13} aria-hidden="true" />
+          </span>
           <span className="brand-caption">Pub bar & night club</span>
         </NavLink>
-        <div className="sidebar-navigation">
-          <p className="nav-caption">Gestión del local</p>
-          <nav aria-label="Navegación principal">
-            <NavLink to="/reservas" end>
-              <ListFilter size={20} aria-hidden="true" />
-              <span>Reservas</span>
-              <ChevronRight className="nav-arrow" size={16} aria-hidden="true" />
-            </NavLink>
-            <NavLink to="/agenda">
-              <CalendarDays size={20} aria-hidden="true" />
-              <span>Agenda</span>
-              <ChevronRight className="nav-arrow" size={16} aria-hidden="true" />
-            </NavLink>
-            <NavLink to="/reservas/nueva">
-              <CalendarPlus size={20} aria-hidden="true" />
-              <span>Nueva reserva</span>
-              <ChevronRight className="nav-arrow" size={16} aria-hidden="true" />
-            </NavLink>
-          </nav>
-        </div>
-        <div className="sidebar-footer">
-          <MapPin size={18} aria-hidden="true" />
-          <div>
-            <strong>Necochea</strong>
-            <span>Calle 87 · 271</span>
-          </div>
-        </div>
-      </aside>
+        <nav className="management-navigation" aria-label="Navegación principal">
+          <NavLink to="/reservas" end>
+            <ListFilter size={20} aria-hidden="true" />
+            <span>Reservas</span>
+          </NavLink>
+          <NavLink to="/agenda">
+            <CalendarDays size={20} aria-hidden="true" />
+            <span>Agenda</span>
+          </NavLink>
+          <NavLink to="/reservas/nueva">
+            <CalendarPlus size={20} aria-hidden="true" />
+            <span>Nueva reserva</span>
+          </NavLink>
+        </nav>
+        <NavLink to="/" className="management-home">
+          Volver al sitio <ArrowUpRight size={17} aria-hidden="true" />
+        </NavLink>
+      </header>
       <div className="workspace">
-        <header className="topbar">
+        <div className="topbar">
           <div className="breadcrumb">
             <span>Gestión del local</span>
             <ChevronRight size={14} aria-hidden="true" />
             <strong>{section}</strong>
           </div>
-          <NavLink to="/" className="topbar-location">
-            Volver al sitio
-          </NavLink>
-        </header>
+          <span className="topbar-location">Necochea, Argentina</span>
+        </div>
         <main id="contenido" ref={main} tabIndex={-1}>
           <Outlet />
         </main>
