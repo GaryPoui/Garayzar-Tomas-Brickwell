@@ -1,15 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import {
-  ArrowLeft,
-  CalendarDays,
-  Check,
-  CircleAlert,
-  CreditCard,
-  RefreshCw,
-  Save,
-  Users,
-} from 'lucide-react'
+import { ArrowLeft, CalendarDays, Check, CircleAlert, RefreshCw, Save } from 'lucide-react'
 import {
   Button,
   EmptyState,
@@ -20,6 +11,7 @@ import {
 } from '../components/ui.jsx'
 import { useNotification, useReservas } from '../utils/applicationContext.js'
 import { crearReserva, modificarReserva, obtenerReserva } from '../services/reservaService.js'
+import barPhoto from '../assets/nightlife/club.jpg'
 import {
   ESTADOS,
   fechaLegible,
@@ -88,7 +80,10 @@ function ReservaForm({ original }) {
       <div className="form-main">
         <fieldset disabled={busy}>
           <legend>
-            Fecha y horario <CalendarDays size={20} aria-hidden="true" />
+            <span className="fieldset-number" aria-hidden="true">
+              01
+            </span>{' '}
+            Fecha y horario
           </legend>
           <div className="form-grid">
             <Field
@@ -114,7 +109,10 @@ function ReservaForm({ original }) {
         </fieldset>
         <fieldset disabled={busy}>
           <legend>
-            Cliente, sector y paquete <Users size={20} aria-hidden="true" />
+            <span className="fieldset-number" aria-hidden="true">
+              02
+            </span>{' '}
+            Cliente, sector y paquete
           </legend>
           <p className="fieldset-description">
             Ingresá los identificadores de tus registros. Revisalos antes de guardar.
@@ -151,7 +149,10 @@ function ReservaForm({ original }) {
         </fieldset>
         <fieldset disabled={busy}>
           <legend>
-            Importes <CreditCard size={20} aria-hidden="true" />
+            <span className="fieldset-number" aria-hidden="true">
+              03
+            </span>{' '}
+            Importes
           </legend>
           <div className="form-grid">
             <Field
@@ -174,6 +175,14 @@ function ReservaForm({ original }) {
         </fieldset>
       </div>
       <aside className="form-summary" aria-label="Resumen de la reserva">
+        <div className="summary-visual">
+          <img
+            src={barPhoto}
+            alt="Imagen de ambientación de una barra de cócteles"
+            width="1200"
+            height="840"
+          />
+        </div>
         <div className="summary-title">
           <h2>Resumen de la reserva</h2>
         </div>
@@ -189,6 +198,20 @@ function ReservaForm({ original }) {
             <span>{values.horario ? `${values.horario} h` : 'Horario por definir'}</span>
           </div>
         </div>
+        <dl className="summary-references">
+          <div>
+            <dt>Cliente</dt>
+            <dd>{values.cliente ? `#${values.cliente}` : 'Sin asignar'}</dd>
+          </div>
+          <div>
+            <dt>Sector</dt>
+            <dd>{values.sector ? `#${values.sector}` : 'Sin asignar'}</dd>
+          </div>
+          <div>
+            <dt>Paquete</dt>
+            <dd>{values.paquete ? `#${values.paquete}` : 'Sin asignar'}</dd>
+          </div>
+        </dl>
         <dl className="summary-amounts">
           <div>
             <dt>Precio total</dt>

@@ -16,7 +16,7 @@ export default function ReservationList({ reservas, onDetail, onDelete }) {
       </div>
       <ul className="reservation-rows" aria-label="Listado de reservas">
         {reservas.map((reserva) => (
-          <li className="reservation-row" key={reserva.id}>
+          <li className="reservation-row" key={reserva.id} data-state={reserva.estado}>
             <div className="reservation-identity">
               <span className="reservation-number">{String(reserva.id).padStart(2, '0')}</span>
               <div>
@@ -29,7 +29,7 @@ export default function ReservationList({ reservas, onDetail, onDelete }) {
             <div className="row-cell">
               <span className="mobile-label">Fecha</span>
               <strong>{fechaLegible(reserva.fecha)}</strong>
-              <small>{reserva.horario} h</small>
+              <small className="reservation-time">{reserva.horario} h</small>
             </div>
             <div className="row-cell">
               <strong>Sector {referencia(reserva.sector)}</strong>

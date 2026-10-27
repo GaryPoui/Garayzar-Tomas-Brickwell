@@ -188,18 +188,21 @@ export default function HeroWordmark() {
         const rows = portrait
           ? [letters.slice(0, 3), letters.slice(3, 6), letters.slice(6)]
           : [letters.slice(0, 5), letters.slice(5)]
-        let widestRow = 0
+        const rowWidths = rows.map((row) =>
+          row.reduce((total, letter) => total + letter.userData.width + 0.12, -0.12),
+        )
+        const viewWidth = Math.max(
+          Math.max(...rowWidths) * 0.91,
+          ((rows.length === 3 ? 5.7 : 3.8) * width) / height,
+        )
         rows.forEach((row, rowIndex) => {
-          const rowWidth = row.reduce(
-            (total, letter) => total + letter.userData.width + 0.12,
-            -0.12,
-          )
-          widestRow = Math.max(widestRow, rowWidth)
+          const rowWidth = rowWidths[rowIndex]
+          const horizontalScale = (viewWidth / rowWidth) * 1.18
           let offset = -rowWidth / 2
           row.forEach((letter, column) => {
-            letter.scale.y = verticalScale
+            letter.scale.set(horizontalScale, verticalScale, 1)
             letter.position.set(
-              offset + letter.userData.width / 2 + (rowIndex % 2 ? 0.2 : -0.12),
+              (offset + letter.userData.width / 2) * horizontalScale,
               (((rows.length - 1) / 2 - rowIndex) * 2.15 + [0.18, -0.18, 0.12][column % 3]) *
                 verticalScale,
               [0.12, -0.2, 0.22][column % 3],
@@ -207,10 +210,6 @@ export default function HeroWordmark() {
             offset += letter.userData.width + 0.12
           })
         })
-        const viewWidth = Math.max(
-          widestRow * 0.91,
-          ((rows.length === 3 ? 5.7 : 3.8) * width) / height,
-        )
         camera.left = -viewWidth / 2
         camera.right = viewWidth / 2
         camera.top = (viewWidth * height) / width / 2

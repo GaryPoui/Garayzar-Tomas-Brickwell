@@ -21,6 +21,8 @@ async function wordmarkPixels(page) {
       let headerPixels = 0
       let firstRow = canvas.height
       let lastRow = 0
+      let firstColumn = canvas.width
+      let lastColumn = 0
       for (let offset = 0; offset < data.length; offset += 4) {
         const red = data[offset]
         const green = data[offset + 1]
@@ -29,8 +31,11 @@ async function wordmarkPixels(page) {
           occupied++
           const pixel = offset / 4
           const row = Math.floor(pixel / canvas.width)
+          const column = pixel % canvas.width
           firstRow = Math.min(firstRow, row)
           lastRow = Math.max(lastRow, row)
+          firstColumn = Math.min(firstColumn, column)
+          lastColumn = Math.max(lastColumn, column)
           if (row < 82) headerPixels++
           if (Math.max(red, green, blue) - Math.min(red, green, blue) > 25) colored++
         }
@@ -41,6 +46,8 @@ async function wordmarkPixels(page) {
         colored,
         headerPixels,
         heightCoverage: (lastRow - firstRow + 1) / canvas.height,
+        leftMargin: firstColumn / canvas.width,
+        rightMargin: (canvas.width - lastColumn - 1) / canvas.width,
         total: canvas.width * canvas.height,
       }
     },
@@ -72,6 +79,8 @@ test('título 3D inmersivo con header transparente, mouse y encuadre responsive'
     expect(pixels.occupied / pixels.total).toBeGreaterThan(0.05)
     expect(pixels.colored / pixels.total).toBeGreaterThan(0.01)
     expect(pixels.heightCoverage).toBeGreaterThan(0.65)
+    expect(pixels.leftMargin).toBeLessThan(0.02)
+    expect(pixels.rightMargin).toBeLessThan(0.02)
     expect(pixels.headerPixels).toBeGreaterThan(0)
     const sceneBounds = await canvas.boundingBox()
     expect(sceneBounds.y).toBe(0)
@@ -101,21 +110,47 @@ test('portada independiente, navegación por secciones y carta interactiva', asy
   await expect(page.getByRole('heading', { name: 'BRICKWEEL', exact: true })).toBeVisible()
   await expect(page.locator('.menu-book')).not.toHaveClass(/is-open/)
   await expect(page.locator('.menu-cover strong')).toHaveText('BRICKWELL')
-  await expect(page.locator('.menu-cover')).toHaveCSS('transition-duration', '2.8s, 0s')
+  await expect(page.locator('.menu-flap')).toHaveCSS('transition-duration', '2.8s')
   await page.getByRole('link', { name: 'Tragos', exact: true }).click()
-  await expect(page.locator('.menu-book')).toHaveClass(/is-open/)
   await expect(page.locator('#tragos')).toBeInViewport()
+  await page.locator('.menu-book').scrollIntoViewIfNeeded()
+  await expect(page.getByRole('button', { name: 'Abrir carta de tragos' })).toBeVisible()
+  await expect(page.locator('.menu-book')).not.toHaveClass(/is-open/)
+  await page.getByRole('button', { name: 'Abrir carta de tragos' }).click()
+  await expect(page.locator('.menu-book')).toHaveClass(/is-open/)
   await page.getByRole('button', { name: 'Mojito Frescos', exact: true }).click()
   await expect(page.locator('#drink-detail h3')).toHaveText('Mojito')
   await expect(page.locator('.drink-ingredients')).toContainText('Ron blanco')
   await page.getByRole('button', { name: 'Trago siguiente', exact: true }).click()
   await expect(page.locator('#drink-detail h3')).toHaveText('Negroni')
   await page.getByRole('button', { name: 'Sin alcohol', exact: true }).click()
-  await expect(page.locator('.drink-list > button')).toHaveCount(1)
+  await expect(page.locator('.drink-list > button')).toHaveCount(2)
   await expect(page.locator('#drink-detail h3')).toHaveText('Citrus & menta')
-  await expect(page.getByRole('button', { name: 'Trago siguiente' })).toBeDisabled()
+  await page.getByRole('button', { name: 'Trago siguiente' }).click()
+  await expect(page.locator('#drink-detail h3')).toHaveText('Pomelo & romero')
+  await page.getByRole('button', { name: 'Combos', exact: true }).click()
+  await expect(page.locator('.drink-list > button')).toHaveCount(4)
+  await expect(page.locator('#drink-detail h3')).toHaveText('Smirnoff + Speed')
+  await expect(page.locator('.drink-price')).toContainText('38.000,00')
+  await expect(page.locator('.drink-price')).toContainText('Precio de ejemplo')
+  await expect(page.locator('.drink-ingredients')).toContainText('4 Speed de 250 ml')
+  await page.getByRole('button', { name: 'Trago anterior' }).click()
+  await expect(page.locator('#drink-detail h3')).toHaveText('Gin + tónicas')
   await page.getByRole('button', { name: 'Todos', exact: true }).click()
-  await expect(page.locator('.drink-list > button')).toHaveCount(5)
+  await expect(page.locator('.drink-list > button')).toHaveCount(2)
+  await expect(page.locator('.menu-page-navigation')).toContainText('Página 4 de 4')
+  await expect(page.getByRole('button', { name: 'Página siguiente de la carta' })).toBeDisabled()
+  await page.getByRole('button', { name: 'Página anterior de la carta' }).click()
+  await expect(page.locator('.drink-list > button')).toHaveCount(4)
+  await expect(page.locator('.menu-page-navigation')).toContainText('Página 3 de 4')
+  await page.getByRole('button', { name: 'Página siguiente de la carta' }).click()
+  await expect(page.locator('.menu-page-navigation')).toContainText('Página 4 de 4')
+  await page.getByRole('button', { name: 'Cerrar carta' }).click()
+  await expect(page.locator('.menu-book')).not.toHaveClass(/is-open/)
+  await expect(page.getByRole('button', { name: 'Abrir carta de tragos' })).toBeFocused()
+  await expect(page.locator('#cocktail-pages')).toHaveAttribute('inert', '')
+  await page.keyboard.press('Enter')
+  await expect(page.locator('.menu-book')).toHaveClass(/is-open/)
   await page.getByRole('link', { name: 'Reservas', exact: true }).click()
   await expect(page.locator('#reservar')).toBeInViewport()
   expect(apiCalls).toEqual([])
@@ -127,6 +162,43 @@ test('portada independiente, navegación por secciones y carta interactiva', asy
   await page.getByRole('link', { name: 'Volver al inicio', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'BRICKWEEL', exact: true })).toBeInViewport()
   expect(errors).toEqual([])
+})
+
+test('tapa con bisagra, foto a la izquierda y cierre reversible', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.goto('./')
+  const book = page.locator('.menu-book')
+  const flap = page.locator('.menu-flap')
+  const cover = page.getByRole('button', { name: 'Abrir carta de tragos' })
+  const close = page.getByRole('button', { name: 'Cerrar carta' })
+  await book.scrollIntoViewIfNeeded()
+  const closedBounds = await book.boundingBox()
+  const photoBounds = await page.locator('.menu-scene').boundingBox()
+  const coverBounds = await cover.boundingBox()
+  expect(Math.abs(photoBounds.x + photoBounds.width - coverBounds.x)).toBeLessThan(1)
+  await cover.click()
+  await expect(flap).toHaveCSS(
+    'transform',
+    'matrix3d(-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1)',
+  )
+  await expect(page.locator('.menu-index')).toHaveCSS('opacity', '1')
+  expect(Math.abs((await book.boundingBox()).height - closedBounds.height)).toBeLessThan(1)
+  expect(
+    await page.locator('.menu-index').evaluate((index) => {
+      const bounds = index.getBoundingClientRect()
+      return index.contains(document.elementFromPoint(bounds.x + 20, bounds.y + 100))
+    }),
+  ).toBe(true)
+  await close.click()
+  await expect(flap).toHaveCSS('transform', 'none')
+  await expect(cover).toBeFocused()
+  await expect(page.locator('.menu-index')).toBeHidden()
+  await expect(close).toBeHidden()
+  await cover.click()
+  await close.click()
+  await expect(flap).toHaveCSS('transform', 'none')
+  await expect(cover).toBeFocused()
+  await expect(book).not.toHaveClass(/is-open/)
 })
 
 test('menú móvil, teclado, fotos, movimiento reducido y accesibilidad', async ({ page }) => {
@@ -143,10 +215,18 @@ test('menú móvil, teclado, fotos, movimiento reducido y accesibilidad', async 
   await page.getByRole('link', { name: 'Tragos', exact: true }).click()
   await expect(toggle).toHaveAttribute('aria-expanded', 'false')
   await expect(page.locator('#tragos')).toBeFocused()
+  await expect(page.locator('.menu-book')).not.toHaveClass(/is-open/)
+  await page.getByRole('button', { name: 'Abrir carta de tragos' }).focus()
+  await page.keyboard.press('Enter')
   await expect(page.locator('.menu-book')).toHaveClass(/is-open/)
+  await page.getByRole('button', { name: 'Página siguiente de la carta' }).focus()
+  await page.keyboard.press('Enter')
+  await expect(page.locator('.menu-page-navigation')).toContainText('Página 2 de 4')
+  await page.getByRole('button', { name: 'Página anterior de la carta' }).click()
+  await expect(page.getByRole('button', { name: 'Página anterior de la carta' })).toBeDisabled()
   await page.getByRole('button', { name: 'Frescos', exact: true }).focus()
   await page.keyboard.press('Enter')
-  await expect(page.locator('.drink-list > button')).toHaveCount(2)
+  await expect(page.locator('.drink-list > button')).toHaveCount(3)
   await expect(page.locator('#drink-detail h3')).toHaveText('Mojito')
   await page.getByRole('button', { name: 'Caipirinha Frescos' }).click()
   await expect(page.locator('#drink-detail h3')).toHaveText('Caipirinha')

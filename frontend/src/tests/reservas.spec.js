@@ -53,6 +53,12 @@ test('CRUD real, validaciones, filtros, agenda y confirmación accesible', async
   await expect(page.getByRole('alert')).toContainText('Revisá los campos')
   for (const [name, value] of Object.entries(reservaValida()))
     await page.locator(`#${name}`).fill(String(value))
+  await expect(page.locator('.summary-references dd')).toHaveText(['#1', '#2', '#1'])
+  await expect(page.locator('.summary-visual img')).toBeVisible()
+  await expect
+    .poll(() => page.locator('.summary-visual img').evaluate((image) => image.naturalWidth))
+    .toBeGreaterThan(0)
+  await expect(page.locator('.summary-balance')).toContainText('35.000,00')
   await page.locator('#anticipo').fill('60000')
   await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
   await expect(page.locator('#anticipo-error')).toContainText('no puede superar')
