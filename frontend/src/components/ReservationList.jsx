@@ -1,11 +1,13 @@
-import { Eye, Pencil, Trash2 } from 'lucide-react'
+import { Check, Eye, Pencil, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { fechaLegible, moneda, referencia } from '../utils/reservas.js'
 import { IconButton, StatusBadge } from './ui.jsx'
+import { useAuth } from '../utils/applicationContext.js'
 
-export default function ReservationList({ reservas, onDetail, onDelete }) {
+export default function ReservationList({ reservas, onDetail, onDelete, onValidate }) {
+  const { staff, user } = useAuth()
   return (
-    <div className="reservation-list">
+    <div className={`reservation-list${staff ? ' management-list' : ''}`}>
       <div className="table-heading" aria-hidden="true">
         <span>Reserva / cliente</span>
         <span>Fecha y horario</span>
@@ -23,7 +25,7 @@ export default function ReservationList({ reservas, onDetail, onDelete }) {
                 <button type="button" className="text-button" onClick={() => onDetail(reserva.id)}>
                   Reserva #{reserva.id}
                 </button>
-                <small>Cliente {referencia(reserva.cliente)}</small>
+                <small>{staff ? `Cliente ${referencia(reserva.cliente)}` : user.nombre}</small>
               </div>
             </div>
             <div className="row-cell">
@@ -57,20 +59,31 @@ export default function ReservationList({ reservas, onDetail, onDelete }) {
                 icon={Eye}
                 onClick={() => onDetail(reserva.id)}
               />
-              <Link
-                className="icon-button"
-                to={`/reservas/${reserva.id}/editar`}
-                aria-label={`Editar reserva #${reserva.id}`}
-                title={`Editar reserva #${reserva.id}`}
-              >
-                <Pencil size={17} aria-hidden="true" />
-              </Link>
-              <IconButton
-                label={`Eliminar reserva #${reserva.id}`}
-                icon={Trash2}
-                className="danger-icon"
-                onClick={() => onDelete(reserva)}
-              />
+              {staff && (
+                <>
+                  {reserva.estado === 'PENDIENTE' && (
+                    <IconButton
+                      label={`Validar reserva #${reserva.id}`}
+                      icon={Check}
+                      onClick={() => onValidate(reserva)}
+                    />
+                  )}
+                  <Link
+                    className="icon-button"
+                    to={`/reservas/${reserva.id}/editar`}
+                    aria-label={`Editar reserva #${reserva.id}`}
+                    title={`Editar reserva #${reserva.id}`}
+                  >
+                    <Pencil size={17} aria-hidden="true" />
+                  </Link>
+                  <IconButton
+                    label={`Eliminar reserva #${reserva.id}`}
+                    icon={Trash2}
+                    className="danger-icon"
+                    onClick={() => onDelete(reserva)}
+                  />
+                </>
+              )}
             </div>
           </li>
         ))}

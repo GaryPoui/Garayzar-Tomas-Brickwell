@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import app from "../src/app.js";
+process.env.ADMIN_EMAIL = "admin-catalogo@example.com";
+process.env.ADMIN_PASSWORD = "Admin-catalogo-testing-123";
+const { default: app } = await import("../src/app.js");
 
 test("catálogo por HTTP: sectores, mesas, precios y fecha válida", async () => {
     const server = app.listen(0, "127.0.0.1");
@@ -46,10 +48,17 @@ test("reservas de mesa: total del servidor, capacidad, combos y conflictos", asy
     const server = app.listen(0, "127.0.0.1");
     await new Promise((resolve) => server.once("listening", resolve));
     const base = `http://127.0.0.1:${server.address().port}/api`;
+    const registration = await fetch(`${base}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD }),
+    });
+    const { data: session } = await registration.json();
+    const headers = { "Content-Type": "application/json", Authorization: `Bearer ${session.token}` };
     const send = (path, method, data) =>
         fetch(`${base}${path}`, {
             method,
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify(data),
         });
     const datos = {
@@ -149,9 +158,9 @@ test("reservas de mesa: total del servidor, capacidad, combos y conflictos", asy
         );
         assert.equal((await send("/reservas", "POST", datos)).status, 201);
     } finally {
-        const all = await (await fetch(`${base}/reservas`)).json();
+        const all = await (await fetch(`${base}/reservas`, { headers })).json();
         for (const reserva of all.data)
-            await fetch(`${base}/reservas/${reserva.id}`, { method: "DELETE" });
+            await fetch(`${base}/reservas/${reserva.id}`, { method: "DELETE", headers });
         await new Promise((resolve) => server.close(resolve));
     }
 });

@@ -4,7 +4,7 @@ import { Armchair, CalendarDays, Minus, Plus, RefreshCw, Save, ShoppingBag } fro
 import { Button, Field, IconButton, LoadingState, StatusBadge } from './ui.jsx'
 import VenueMap from './VenueMap.jsx'
 import useCatalogo from '../utils/useCatalogo.js'
-import { useNotification, useReservas } from '../utils/applicationContext.js'
+import { useAuth, useNotification, useReservas } from '../utils/applicationContext.js'
 import { crearReserva, modificarReserva } from '../services/reservaService.js'
 import { ESTADOS, fechaLegible, fechaMinima, moneda, validarReserva } from '../utils/reservas.js'
 import barPhoto from '../assets/nightlife/club.jpg'
@@ -14,11 +14,11 @@ import citrusPhoto from '../assets/nightlife/citrus.jpg'
 const photos = { bar: barPhoto, whisky: whiskyPhoto, citrus: citrusPhoto }
 
 export default function MesaReservaForm({ original }) {
+  const { user, home } = useAuth()
   const [params] = useSearchParams()
   const [values, setValues] = useState(() => ({
     fecha: original?.fecha || fechaMinima(),
     horario: original?.horario || '23:30',
-    cliente: original?.cliente || '',
     personas: original?.personas || 2,
     mesa: original?.mesa || '',
     anticipo: original?.anticipo || 0,
@@ -76,7 +76,7 @@ export default function MesaReservaForm({ original }) {
     event.preventDefault()
     if (busy) return
     const failures = validarReserva(
-      { ...values, sector: mesa?.sector || 1, paquete: 1, precioTotal: total },
+      { ...values, cliente: user.id, sector: mesa?.sector || 1, paquete: 1, precioTotal: total },
       original,
     )
     if (
@@ -112,7 +112,6 @@ export default function MesaReservaForm({ original }) {
     try {
       const data = {
         ...values,
-        cliente: Number(values.cliente),
         personas: Number(values.personas),
         mesa: mesa.id,
         anticipo: Number(values.anticipo),
@@ -125,7 +124,7 @@ export default function MesaReservaForm({ original }) {
       const saved = original ? await modificarReserva(original.id, data) : await crearReserva(data)
       notify(`La reserva #${saved.id} se ${original ? 'actualizó' : 'creó'} correctamente.`)
       refreshReservas()
-      navigate('/reservas')
+      navigate(home)
     } catch (failure) {
       notify(failure.message, 'error')
       if (failure.status === 409) {
@@ -163,14 +162,6 @@ export default function MesaReservaForm({ original }) {
             />
             <Field {...input('horario')} label="Horario" type="time" />
             <Field {...input('personas')} label="Personas" type="number" min="1" max="6" step="1" />
-            <Field
-              {...input('cliente')}
-              label="ID del cliente"
-              type="number"
-              min="1"
-              step="1"
-              hint="Identificador del cliente registrado."
-            />
           </div>
           {original && (
             <Field {...input('estado')} label="Estado">
@@ -355,7 +346,11 @@ export default function MesaReservaForm({ original }) {
         <dl className="summary-references">
           <div>
             <dt>Cliente</dt>
-            <dd>{values.cliente ? `#${values.cliente}` : 'Sin asignar'}</dd>
+            <dd>
+              {original && original.cliente !== user.id
+                ? `Cliente #${original.cliente}`
+                : user.nombre}
+            </dd>
           </div>
           <div>
             <dt>Sector</dt>
@@ -411,7 +406,7 @@ export default function MesaReservaForm({ original }) {
         </p>
       </aside>
       <div className="form-actions">
-        <Button variant="secondary" disabled={busy} onClick={() => navigate('/reservas')}>
+        <Button variant="secondary" disabled={busy} onClick={() => navigate(home)}>
           Cancelar
         </Button>
         <Button type="submit" icon={Save} busy={busy} disabled={loading || Boolean(error)}>

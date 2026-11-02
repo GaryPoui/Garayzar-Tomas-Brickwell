@@ -7,6 +7,7 @@ import djPhoto from '../assets/nightlife/dancefloor.jpg'
 import crowdPhoto from '../assets/nightlife/crowd.jpg'
 import barPhoto from '../assets/nightlife/club.jpg'
 import '../styles/home.css'
+import { useAuth } from '../utils/applicationContext.js'
 
 const navigation = [
   { id: 'noche', label: 'La noche' },
@@ -15,6 +16,7 @@ const navigation = [
 ]
 
 export default function HomePage() {
+  const { user, home, bookingPath } = useAuth()
   const { hash, key: locationKey } = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const [active, setActive] = useState('inicio')
@@ -157,6 +159,9 @@ export default function HomePage() {
               {id === 'reservar' && <ArrowUpRight size={17} aria-hidden="true" />}
             </Link>
           ))}
+          <Link to={user ? home : '/login'} onClick={() => setMenuOpen(false)}>
+            {user ? 'Mi cuenta' : 'Iniciar sesión'}
+          </Link>
         </nav>
       </header>
 
@@ -294,10 +299,10 @@ export default function HomePage() {
               El primer paso de una buena noche: elegir cuándo nos vemos. Organizá tu salida y
               completá tu reserva.
             </p>
-            <Link to="/reservas/nueva" className="night-reserve-button">
+            <Link to={bookingPath} className="night-reserve-button">
               Reservar una mesa <ArrowUpRight size={24} strokeWidth={1.5} aria-hidden="true" />
             </Link>
-            <Link to="/reservas" className="night-management-link">
+            <Link to={home} className="night-management-link">
               Ver reservas <ArrowUpRight size={16} aria-hidden="true" />
             </Link>
           </div>

@@ -7,18 +7,27 @@ import {
   CalendarPlus,
   ChevronRight,
   ListFilter,
+  LogOut,
 } from 'lucide-react'
+import { useAuth } from '../utils/applicationContext.js'
+import { useState } from 'react'
+import '../styles/auth.css'
 
 export default function Layout() {
+  const { user, staff, bookingPath, logout } = useAuth()
+  const [logoutBusy, setLogoutBusy] = useState(false)
   const { pathname } = useLocation()
   const main = useRef(null)
-  const section = pathname.includes('nueva')
-    ? 'Nueva reserva'
-    : pathname.includes('editar')
-      ? 'Editar reserva'
-      : pathname.includes('agenda')
-        ? 'Agenda'
-        : 'Reservas'
+  const section =
+    pathname.includes('nueva') || pathname === '/reservar'
+      ? staff
+        ? 'Nueva reserva'
+        : 'Reservar'
+      : pathname.includes('editar')
+        ? 'Editar reserva'
+        : pathname.includes('agenda')
+          ? 'Agenda'
+          : 'Reservas'
   useEffect(() => {
     main.current?.focus({ preventScroll: true })
     document.title = `${section} | BRICKWEEL`
@@ -45,17 +54,19 @@ export default function Layout() {
           <span className="brand-caption">Pub bar & night club</span>
         </NavLink>
         <nav className="management-navigation" aria-label="Navegación principal">
-          <NavLink to="/reservas" end>
-            <ListFilter size={20} aria-hidden="true" />
-            <span>Reservas</span>
-          </NavLink>
+          {staff && (
+            <NavLink to="/reservas" end>
+              <ListFilter size={20} aria-hidden="true" />
+              <span>Reservas</span>
+            </NavLink>
+          )}
           <NavLink to="/agenda">
             <CalendarDays size={20} aria-hidden="true" />
             <span>Agenda</span>
           </NavLink>
-          <NavLink to="/reservas/nueva">
+          <NavLink to={bookingPath}>
             <CalendarPlus size={20} aria-hidden="true" />
-            <span>Nueva reserva</span>
+            <span>{staff ? 'Nueva reserva' : 'Reservar'}</span>
           </NavLink>
         </nav>
         <NavLink to="/" className="management-home">
@@ -65,11 +76,32 @@ export default function Layout() {
       <div className="workspace">
         <div className="topbar">
           <div className="breadcrumb">
-            <span>Gestión del local</span>
+            <span>
+              {staff ? (user.rol === 'ADMIN' ? 'Administración' : 'Recepción') : 'Mi cuenta'}
+            </span>
             <ChevronRight size={14} aria-hidden="true" />
             <strong>{section}</strong>
           </div>
-          <span className="topbar-location">Necochea, Argentina</span>
+          <div className="account-controls">
+            <span title={user.nombre}>{user.nombre}</span>
+            <button
+              type="button"
+              className="icon-button"
+              title="Cerrar sesión"
+              aria-label="Cerrar sesión"
+              disabled={logoutBusy}
+              onClick={async () => {
+                setLogoutBusy(true)
+                try {
+                  await logout()
+                } catch {
+                  setLogoutBusy(false)
+                }
+              }}
+            >
+              <LogOut size={19} />
+            </button>
+          </div>
         </div>
         <main id="contenido" ref={main} tabIndex={-1}>
           <Outlet />

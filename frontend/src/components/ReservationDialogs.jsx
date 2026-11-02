@@ -1,13 +1,14 @@
 import { useEffect, useEffectEvent, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Pencil, Trash2, TriangleAlert } from 'lucide-react'
+import { Check, Pencil, Trash2, TriangleAlert } from 'lucide-react'
 import Modal from './Modal.jsx'
 import { Button, LoadingState, StatusBadge } from './ui.jsx'
-import { useNotification, useReservas } from '../utils/applicationContext.js'
-import { eliminarReserva, obtenerReserva } from '../services/reservaService.js'
+import { useAuth, useNotification, useReservas } from '../utils/applicationContext.js'
+import { eliminarReserva, modificarReserva, obtenerReserva } from '../services/reservaService.js'
 import { fechaLegible, moneda, referencia } from '../utils/reservas.js'
 
 export function ReservationDetail({ id, onClose }) {
+  const { staff, user } = useAuth()
   const [reserva, setReserva] = useState(null)
   const [error, setError] = useState('')
   const [retry, setRetry] = useState(0)
@@ -59,7 +60,7 @@ export function ReservationDetail({ id, onClose }) {
             </div>
             <div>
               <dt>Cliente</dt>
-              <dd>{referencia(reserva.cliente)}</dd>
+              <dd>{staff ? referencia(reserva.cliente) : user.nombre}</dd>
             </div>
             <div>
               <dt>Sector</dt>
@@ -108,10 +109,12 @@ export function ReservationDetail({ id, onClose }) {
             <Button variant="secondary" onClick={onClose}>
               Cerrar
             </Button>
-            <Link className="button button-primary" to={`/reservas/${id}/editar`}>
-              <Pencil size={17} aria-hidden="true" />
-              Editar reserva
-            </Link>
+            {staff && (
+              <Link className="button button-primary" to={`/reservas/${id}/editar`}>
+                <Pencil size={17} aria-hidden="true" />
+                Editar reserva
+              </Link>
+            )}
           </footer>
         </>
       )}
@@ -151,6 +154,48 @@ export function DeleteReservation({ reserva, onClose }) {
         </Button>
         <Button variant="danger" icon={Trash2} busy={busy} onClick={remove}>
           {busy ? 'Eliminando...' : 'Eliminar reserva'}
+        </Button>
+      </footer>
+    </Modal>
+  )
+}
+
+export function ValidateReservation({ reserva, onClose }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const { refresh } = useReservas()
+  const notify = useNotification()
+  async function validate() {
+    if (busy) return
+    setBusy(true)
+    setError('')
+    try {
+      await modificarReserva(reserva.id, { estado: 'CONFIRMADA' })
+      refresh()
+      notify(`La reserva #${reserva.id} quedó confirmada.`)
+      onClose()
+    } catch (failure) {
+      setError(failure.message)
+      setBusy(false)
+    }
+  }
+  return (
+    <Modal title="Validar reserva" onClose={onClose} busy={busy}>
+      <p>
+        ¿Confirmar la reserva #{reserva.id} del {fechaLegible(reserva.fecha)} a las{' '}
+        {reserva.horario} h?
+      </p>
+      {error && (
+        <p className="field-error" role="alert">
+          {error}
+        </p>
+      )}
+      <footer className="modal-actions">
+        <Button variant="secondary" disabled={busy} onClick={onClose} data-autofocus>
+          Volver
+        </Button>
+        <Button icon={Check} busy={busy} onClick={validate}>
+          {busy ? 'Validando...' : 'Confirmar reserva'}
         </Button>
       </footer>
     </Modal>

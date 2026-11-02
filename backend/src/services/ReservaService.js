@@ -10,6 +10,12 @@ import {
 } from "../utils/reservaValidator.js";
 
 class ReservaService {
+    obtenerPropia(id, cliente) {
+        const reserva = this.obtenerPorId(id);
+        if (reserva.cliente !== cliente) throw new NotFoundError(Messages.RESERVATION_NOT_FOUND);
+        return reserva;
+    }
+
     obtenerTodas() {
         return ReservaRepository.findAll();
     }
@@ -62,7 +68,6 @@ class ReservaService {
                         "fecha",
                         "horario",
                         "estado",
-                        "cliente",
                         "sector",
                         "paquete",
                         "precioTotal",

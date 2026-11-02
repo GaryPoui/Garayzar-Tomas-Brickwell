@@ -101,19 +101,29 @@ La portada del 27/10/2026 sigue el nuevo pedido basado en DEEO Studio: negro, vo
 
 El área de reservas continúa el lenguaje de la portada: fondo negro `#080809`, superficies `#141416`, texto claro y acciones verde pálido `#D3EFB1`. La navegación superior sustituye a la barra lateral, el resumen se presenta como una franja de datos y el listado y el formulario usan secciones abiertas, sin paneles blancos. Los diálogos y las notificaciones, incluidos los portales, comparten el tema oscuro. Las variables semánticas `--color-*` están en `src/styles/global.css`; `layout.css` define la estructura y `reservas.css` las vistas operativas. Los estados tienen etiquetas y colores propios; las acciones destructivas se distinguen en rosa.
 
-Manrope se sirve localmente para datos y formularios, Georgia para títulos y Barlow Condensed para la marca. Las filas destacan horario y estado, siempre con etiqueta textual. El formulario nuevo muestra fecha, personas, cliente, sector, mapa de mesas, cantidades de combos y resumen del costo. `booking.css` conserva el tema oscuro, con colores independientes para las tres zonas. Las reservas previas sin mesa conservan el formulario de la Entrega 2.
+Manrope se sirve localmente para datos y formularios, Georgia para títulos y Barlow Condensed para la marca. Las filas destacan horario y estado, siempre con etiqueta textual. El formulario nuevo muestra fecha, personas, sector, mapa de mesas, cantidades de combos y resumen del costo con el nombre de la cuenta. No solicita un ID de cliente. `booking.css` conserva el tema oscuro, con colores independientes para las tres zonas. Las reservas previas sin mesa conservan el formulario de la Entrega 2.
 
-El listado conserva filtros y parámetros en la URL. La agenda agrupa por fecha las reservas desde hoy sin canceladas. El mapa tiene botones accesibles con nombre de mesa, precio, capacidad y disponibilidad; los colores no sustituyen esos textos. Las mesas ocupadas o de capacidad insuficiente no se pueden seleccionar. Ante un conflicto HTTP 409 se actualiza la disponibilidad sin borrar los combos elegidos. El resumen pasa debajo de los campos en móvil.
+El listado conserva filtros y parámetros en la URL. La agenda del personal agrupa por fecha las reservas desde hoy sin canceladas; la del cliente incluye todas sus reservas, también pasadas y canceladas. El mapa tiene botones accesibles con nombre de mesa, precio, capacidad y disponibilidad; los colores no sustituyen esos textos. Las mesas ocupadas o de capacidad insuficiente no se pueden seleccionar. Ante un conflicto HTTP 409 se actualiza la disponibilidad sin borrar los combos elegidos. El resumen pasa debajo de los campos en móvil.
 
-El panel se implementó a partir de los documentos del repositorio. La ampliación del 02/11 incorpora selección de mesas, disponibilidad por noche y combos. Autenticación, eventos y pagos en línea siguen fuera del alcance implementado.
+El panel se implementó a partir de los documentos del repositorio. La ampliación del 02/11 incorpora selección de mesas, disponibilidad por noche, combos y autenticación. Eventos y pagos en línea siguen fuera del alcance implementado.
+
+### Cuenta
+
+`/#/registro` y `/#/login` comparten la fotografía, tipografías y tema oscuro del sitio. El registro pide nombre, email y contraseña de al menos diez caracteres; inicia sesión automáticamente. Las rutas de reservas y agenda exigen una sesión y regresan al destino solicitado después del acceso. La portada permanece pública e incluye un enlace a la cuenta. El botón de cierre está junto al nombre de usuario.
+
+La sesión incluye `rol`. Los clientes ven únicamente **Agenda** (`/#/agenda`) y **Reservar** (`/#/reservar`), sin panel de métricas ni controles de edición, validación o eliminación. El detalle de sus reservas es de solo lectura. Las rutas de gestión redirigen a su agenda, y la dirección antigua de nueva reserva conserva los parámetros al redirigir a Reservar.
+
+Administración y recepción conservan **Reservas**, **Agenda** y **Nueva reserva**, con todas las reservas. Las pendientes incorporan un botón con icono y tooltip para validar, con confirmación en un diálogo. La edición muestra al cliente original y no reasigna la reserva al operador. La API aplica los permisos de manera independiente del frontend. Las pruebas cubren cliente y admin en contextos de navegador independientes y verifican acciones sin solapamientos a 320, 768, 1280 y 1440 px.
+
+El token se guarda en `sessionStorage` de la pestaña, se envía en el encabezado Bearer y se valida con `/api/auth/sesion` al recargar. Un 401 borra la sesión y vuelve al acceso; un error de conexión permite reintentar sin borrar el token. La sesión vence a los siete días y cerrar sesión la revoca en el servidor. No hay recuperación de contraseña ni verificación de email. `auth.spec.js` cubre acceso, registro, recarga, privacidad, sesión inválida, accesibilidad y capturas de 320 a 1440 px.
 
 La dirección, las referencias consultadas y las limitaciones están documentadas en [design-review/README.md](design-review/README.md). Allí también se enlazan las capturas del rediseño.
 
 ## Alcance del backend
 
-La API implementa CRUD de reservas y catálogo de sectores, mesas y paquetes. Solo se solicita el ID del cliente; no hay registro ni autenticación. La mesa y los combos se eligen por nombre y la API calcula su total. El catálogo y el mapa son orientativos, con tarifas de referencia visibles, pendientes de confirmación por el local. Los combos se reservan junto con la mesa y se pagan según lo coordinado con el local; no hay cobros en línea. La carta de la portada sigue siendo contenido editorial estático.
+La API implementa registro, sesiones, CRUD de reservas y catálogo de sectores, mesas y paquetes. El servidor asigna el cliente desde la sesión: los clientes consultan solo sus reservas y el personal gestiona todas. El frontend nunca envía un ID de cliente. La mesa y los combos se eligen por nombre y la API calcula su total. El catálogo y el mapa son orientativos, con tarifas de referencia visibles, pendientes de confirmación por el local. Los combos se reservan junto con la mesa y se pagan según lo coordinado con el local; no hay cobros en línea. La carta de la portada sigue siendo contenido editorial estático.
 
-Las reservas se almacenan en memoria: reiniciar el backend elimina los datos. El frontend no agrega persistencia local para ocultar esa limitación. La validación visual no sustituye las validaciones ni la autorización que necesite el servidor en producción.
+Las cuentas, sesiones y reservas se almacenan en memoria: reiniciar el backend elimina los datos. El frontend no agrega persistencia local para ocultar esa limitación. El control de acceso se aplica en el servidor, además de la protección visual de rutas. Antes de usar cuentas o reservas reales hace falta una base de datos durable.
 
 ## Verificación
 

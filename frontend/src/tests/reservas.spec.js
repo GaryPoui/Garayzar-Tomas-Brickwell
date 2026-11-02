@@ -1,6 +1,37 @@
-import { test, expect } from '@playwright/test'
+import { test as base, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { fechaMinima } from '../utils/reservas.js'
+
+const test = base.extend({
+  session: async ({ playwright, baseURL }, provide) => {
+    const client = await playwright.request.newContext({ baseURL })
+    const response = await client.post('/api/auth/login', {
+      data: {
+        email: 'admin-e2e@example.com',
+        password: 'Admin-e2e-testing-123',
+      },
+    })
+    expect(response.status()).toBe(200)
+    const { data } = await response.json()
+    await client.dispose()
+    await provide(data)
+  },
+  request: async ({ playwright, baseURL, session }, provide) => {
+    const client = await playwright.request.newContext({
+      baseURL,
+      extraHTTPHeaders: { Authorization: `Bearer ${session.token}` },
+    })
+    await provide(client)
+    await client.dispose()
+  },
+  page: async ({ page, session }, provide) => {
+    await page.addInitScript(
+      (token) => sessionStorage.setItem('brickwell-session', token),
+      session.token,
+    )
+    await provide(page)
+  },
+})
 
 const reservaValida = () => ({
   fecha: fechaMinima(),
@@ -48,14 +79,14 @@ test('CRUD real, validaciones, filtros, agenda y confirmación accesible', async
   await expect(page.getByText('Todavía no hay reservas registradas.')).toBeVisible()
   await page.getByRole('link', { name: 'Crear primera reserva' }).click()
   await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
-  await expect(page.locator('[aria-invalid="true"]')).toHaveCount(2)
-  await expect(page.locator('#cliente')).toBeFocused()
+  await expect(page.locator('[aria-invalid="true"]')).toHaveCount(1)
+  await expect(page.locator('#cliente')).toHaveCount(0)
   await expect(page.getByRole('alert')).toContainText('Revisá los campos')
-  for (const name of ['fecha', 'horario', 'cliente', 'anticipo'])
+  for (const name of ['fecha', 'horario', 'anticipo'])
     await page.locator(`#${name}`).fill(String(reservaValida()[name]))
   await page.getByRole('button', { name: /^Mesa P1,/ }).click()
   await expect(page.locator('.summary-references dd')).toHaveText([
-    '#1',
+    'Administración',
     'Pista',
     'P1 · Zona central',
   ])
@@ -188,7 +219,7 @@ test('paginación, filtros y disposición sin desbordes en móvil y escritorio',
     await page.screenshot({ path: testInfo.outputPath(`agenda-${width}.png`), fullPage: true })
     await page.getByRole('link', { name: 'Nueva reserva', exact: true }).first().click()
     await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
-    await expect(page.locator('[aria-invalid="true"]')).toHaveCount(2)
+    await expect(page.locator('[aria-invalid="true"]')).toHaveCount(1)
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBeTruthy()
@@ -232,16 +263,16 @@ test('cambiar de reserva por el historial recarga el formulario correcto', async
   page,
   request,
 }) => {
-  const first = await createReserva(request, { cliente: 11 })
-  const second = await createReserva(request, { cliente: 22 })
+  const first = await createReserva(request, { horario: '22:00' })
+  const second = await createReserva(request, { horario: '23:00' })
   await page.goto(`#/reservas/${first.id}/editar`)
-  await expect(page.locator('#cliente')).toHaveValue('11')
+  await expect(page.locator('#horario')).toHaveValue('22:00')
   await page.getByRole('link', { name: 'Volver a reservas' }).click()
   await page.getByRole('link', { name: `Editar reserva #${second.id}` }).click()
-  await expect(page.locator('#cliente')).toHaveValue('22')
+  await expect(page.locator('#horario')).toHaveValue('23:00')
   await page.goBack()
   await page.goBack()
-  await expect(page.locator('#cliente')).toHaveValue('11')
+  await expect(page.locator('#horario')).toHaveValue('22:00')
 })
 
 test('mesas, mapa, combos anticipados, edición y disponibilidad real', async ({
@@ -252,7 +283,7 @@ test('mesas, mapa, combos anticipados, edición y disponibilidad real', async ({
   await expect(page.locator('.sector-offer')).toHaveCount(3)
   await page.getByRole('link', { name: 'Elegir Frente al escenario' }).click()
   await expect(page.locator('.venue-stage')).toHaveText('ESCENARIO')
-  await page.locator('#cliente').fill('7')
+  await expect(page.locator('#cliente')).toHaveCount(0)
   await page.locator('#personas').fill('4')
   await page.getByRole('button', { name: /^Mesa V1,/ }).click()
   await page.getByRole('button', { name: 'Agregar Smirnoff + Speed' }).click()
@@ -304,7 +335,7 @@ test('inicio móvil a 320 px: controles táctiles, resumen debajo y reserva comp
   await page.setViewportSize({ width: 320, height: 740 })
   await page.goto('#/reservas/nueva')
   await expect(page.locator('.venue-table')).toHaveCount(12)
-  await expect(page.locator('#cliente')).toHaveCSS('font-size', '16px')
+  await expect(page.locator('#personas')).toHaveCSS('font-size', '16px')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   )
@@ -319,7 +350,6 @@ test('inicio móvil a 320 px: controles táctiles, resumen debajo y reserva comp
       }),
     ),
   ).toBe(true)
-  await page.locator('#cliente').fill('12')
   await page.getByRole('button', { name: /^Mesa B1,/ }).click()
   await page.getByRole('button', { name: 'Agregar Gin + tónicas' }).click()
   await expect(page.locator('#precioTotal')).toHaveValue(/75\.000,00/)
@@ -343,7 +373,6 @@ test('catálogo fallido y mesa ocupada durante el envío: error y recuperación'
   await expect(page.getByRole('button', { name: 'Crear reserva', exact: true })).toBeDisabled()
   await page.unroute('**/api/catalogo?*')
   await page.getByRole('button', { name: 'Reintentar catálogo' }).click()
-  await page.locator('#cliente').fill('8')
   await page.getByRole('button', { name: /^Mesa V2,/ }).click()
   const competing = await request.post('/api/reservas', {
     data: {

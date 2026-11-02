@@ -14,6 +14,7 @@ export default defineConfig({
   webServer: [
     {
       command: 'PORT=3101 npm --prefix ../backend start',
+      env: { ADMIN_EMAIL: 'admin-e2e@example.com', ADMIN_PASSWORD: 'Admin-e2e-testing-123' },
       url: 'http://127.0.0.1:3101',
       reuseExistingServer: false,
     },

@@ -167,12 +167,15 @@
   margin-left: auto;
   min-height: 44px;
 }
+.management-list {
+  --reservation-actions-width: 176px;
+}
 .table-heading,
 .reservation-row {
   display: grid;
   grid-template-columns:
     minmax(118px, 1.1fr) minmax(110px, 1fr) minmax(84px, 0.8fr) minmax(116px, 1fr)
-    110px 132px;
+    110px var(--reservation-actions-width, 132px);
   align-items: center;
   gap: 8px;
 }
@@ -303,6 +306,10 @@
 .reservation-row .row-actions {
   grid-column: 2;
   grid-row: 3;
+}
+.management-list .row-actions {
+  grid-column: 1 / -1;
+  grid-row: 4;
 }
 .reservation-row .text-button {
   min-height: 44px;
@@ -649,6 +656,10 @@
     grid-column: 3;
     grid-row: 2;
   }
+  .management-list .row-actions {
+    grid-column: 3;
+    grid-row: 2;
+  }
   .pagination {
     padding: 14px 24px;
     flex-wrap: nowrap;
@@ -715,12 +726,13 @@
   .reservation-row {
     grid-template-columns:
       minmax(118px, 1.1fr) minmax(110px, 1fr) minmax(84px, 0.8fr) minmax(116px, 1fr)
-      110px 132px;
+      110px var(--reservation-actions-width, 132px);
     gap: 8px;
     padding-inline: 20px;
   }
   .reservation-row .row-status,
-  .reservation-row .row-actions {
+  .reservation-row .row-actions,
+  .management-list .row-actions {
     grid-column: auto;
     grid-row: auto;
   }
@@ -743,7 +755,7 @@
   .reservation-row {
     grid-template-columns:
       minmax(140px, 1.15fr) minmax(122px, 1fr) minmax(95px, 0.8fr) minmax(128px, 1fr)
-      112px 132px;
+      112px var(--reservation-actions-width, 132px);
     gap: 12px;
     padding-inline: 24px;
   }

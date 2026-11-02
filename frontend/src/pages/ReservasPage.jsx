@@ -23,8 +23,12 @@ import {
 } from '../components/ui.jsx'
 import ReservationList from '../components/ReservationList.jsx'
 import ReservationOptions from '../components/ReservationOptions.jsx'
-import { DeleteReservation, ReservationDetail } from '../components/ReservationDialogs.jsx'
-import { useReservas } from '../utils/applicationContext.js'
+import {
+  DeleteReservation,
+  ReservationDetail,
+  ValidateReservation,
+} from '../components/ReservationDialogs.jsx'
+import { useAuth, useReservas } from '../utils/applicationContext.js'
 import { ESTADOS, fechaLegible, fechaLocal, filtrarReservas, moneda } from '../utils/reservas.js'
 
 function Summary({ reservas, unavailable }) {
@@ -76,17 +80,22 @@ function Summary({ reservas, unavailable }) {
 }
 
 export default function ReservasPage({ agenda = false }) {
+  const { staff, bookingPath } = useAuth()
   const { reservas, loading, error, refresh } = useReservas()
   const [params, setParams] = useSearchParams()
   const [detailId, setDetailId] = useState(null)
   const [toDelete, setToDelete] = useState(null)
+  const [toValidate, setToValidate] = useState(null)
   const search = params.get('buscar') || ''
   const estado = params.get('estado') || ''
   const fecha = params.get('fecha') || ''
   const deferredSearch = useDeferredValue(search)
-  const upcoming = agenda
-    ? reservas.filter((reserva) => reserva.fecha >= fechaLocal() && reserva.estado !== 'CANCELADA')
-    : reservas
+  const upcoming =
+    agenda && staff
+      ? reservas.filter(
+          (reserva) => reserva.fecha >= fechaLocal() && reserva.estado !== 'CANCELADA',
+        )
+      : reservas
   const filtered = filtrarReservas(upcoming, { search: deferredSearch, estado, fecha })
   const pageSize = 8
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
@@ -111,24 +120,26 @@ export default function ReservasPage({ agenda = false }) {
   return (
     <>
       <PageHeading
-        title={agenda ? 'Agenda de reservas' : 'Reservas'}
+        title={agenda ? (staff ? 'Agenda de reservas' : 'Mi agenda') : 'Reservas'}
         description={
-          agenda
-            ? 'Consultá las reservas desde hoy, ordenadas por fecha y horario.'
-            : 'Organizá cada llegada. Todos los detalles, en un solo lugar.'
+          !staff
+            ? 'Tus reservas y el estado de cada noche.'
+            : agenda
+              ? 'Consultá las reservas desde hoy, ordenadas por fecha y horario.'
+              : 'Organizá cada llegada. Todos los detalles, en un solo lugar.'
         }
       >
         <Button variant="secondary" icon={RefreshCw} busy={loading} onClick={refresh}>
           Actualizar
         </Button>
-        <Link className="button button-primary" to="/reservas/nueva">
+        <Link className="button button-primary" to={bookingPath}>
           <Plus size={18} aria-hidden="true" />
-          Nueva reserva
+          {staff ? 'Nueva reserva' : 'Reservar'}
         </Link>
       </PageHeading>
       {!agenda && <Summary reservas={reservas} unavailable={loading || Boolean(error)} />}
       {!agenda && <ReservationOptions />}
-      {agenda && (
+      {agenda && staff && (
         <div className="agenda-banner">
           <CalendarDays size={28} aria-hidden="true" />
           <div>
@@ -140,7 +151,9 @@ export default function ReservasPage({ agenda = false }) {
       <section className="reservations-section" aria-labelledby="list-title">
         <div className="section-heading">
           <div>
-            <h2 id="list-title">{agenda ? 'Próximas reservas' : 'Todas las reservas'}</h2>
+            <h2 id="list-title">
+              {!staff ? 'Mis reservas' : agenda ? 'Próximas reservas' : 'Todas las reservas'}
+            </h2>
             <span className="count-badge">{loading || error ? '...' : upcoming.length}</span>
           </div>
           <span className="section-caption">
@@ -156,7 +169,9 @@ export default function ReservasPage({ agenda = false }) {
               name="buscar"
               autoComplete="off"
               type="search"
-              placeholder="ID de reserva, cliente, sector o paquete…"
+              placeholder={
+                staff ? 'ID de reserva, cliente, sector o paquete…' : 'Reserva, sector o mesa…'
+              }
               value={search}
               onChange={(event) => setFilter('buscar', event.target.value)}
             />
@@ -169,7 +184,7 @@ export default function ReservasPage({ agenda = false }) {
           >
             <option value="">Todos</option>
             {Object.entries(ESTADOS)
-              .filter(([key]) => !agenda || key !== 'CANCELADA')
+              .filter(([key]) => !agenda || !staff || key !== 'CANCELADA')
               .map(([key, label]) => (
                 <option key={key} value={key}>
                   {label}
@@ -213,14 +228,14 @@ export default function ReservasPage({ agenda = false }) {
             title={
               hasFilters
                 ? 'No hay coincidencias'
-                : agenda
+                : agenda && staff
                   ? 'La agenda está libre'
                   : 'Todo empieza con una reserva'
             }
             description={
               hasFilters
                 ? 'No encontramos reservas con estos filtros.'
-                : agenda
+                : agenda && staff
                   ? 'No hay reservas próximas registradas.'
                   : 'Todavía no hay reservas registradas.'
             }
@@ -230,7 +245,7 @@ export default function ReservasPage({ agenda = false }) {
                 Limpiar filtros
               </Button>
             ) : (
-              <Link className="button button-primary" to="/reservas/nueva">
+              <Link className="button button-primary" to={bookingPath}>
                 <Plus size={18} aria-hidden="true" />
                 Crear primera reserva
               </Link>
@@ -249,11 +264,17 @@ export default function ReservasPage({ agenda = false }) {
                     reservas={visible.filter((reserva) => reserva.fecha === date)}
                     onDetail={setDetailId}
                     onDelete={setToDelete}
+                    onValidate={setToValidate}
                   />
                 </section>
               ))
             ) : (
-              <ReservationList reservas={visible} onDetail={setDetailId} onDelete={setToDelete} />
+              <ReservationList
+                reservas={visible}
+                onDetail={setDetailId}
+                onDelete={setToDelete}
+                onValidate={setToValidate}
+              />
             )}
             <footer className="pagination">
               <span role="status">
@@ -285,7 +306,12 @@ export default function ReservasPage({ agenda = false }) {
       {detailId !== null && (
         <ReservationDetail key={detailId} id={detailId} onClose={() => setDetailId(null)} />
       )}
-      {toDelete && <DeleteReservation reserva={toDelete} onClose={() => setToDelete(null)} />}
+      {staff && toDelete && (
+        <DeleteReservation reserva={toDelete} onClose={() => setToDelete(null)} />
+      )}
+      {staff && toValidate && (
+        <ValidateReservation reserva={toValidate} onClose={() => setToValidate(null)} />
+      )}
     </>
   )
 }

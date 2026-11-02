@@ -1,10 +1,11 @@
 import ReservaService from "../services/ReservaService.js";
 import ApiResponse from "../responses/ApiResponse.js";
+import { isStaff } from "../services/AuthService.js";
 
 class ReservaController {
     obtenerTodas(req, res, next) {
         try {
-            const reservas = ReservaService.obtenerTodas();
+            const reservas = ReservaService.obtenerTodas().filter((reserva) => isStaff(req.user) || reserva.cliente === req.user.id);
             return ApiResponse.success(res, reservas, 200);
         } catch (error) {
             next(error);
@@ -13,7 +14,9 @@ class ReservaController {
 
     obtenerPorId(req, res, next) {
         try {
-            const reserva = ReservaService.obtenerPorId(req.params.id);
+            const reserva = isStaff(req.user)
+                ? ReservaService.obtenerPorId(req.params.id)
+                : ReservaService.obtenerPropia(req.params.id, req.user.id);
             return ApiResponse.success(res, reserva, 200);
         } catch (error) {
             next(error);
@@ -22,7 +25,7 @@ class ReservaController {
 
     crear(req, res, next) {
         try {
-            const nuevaReserva = ReservaService.crear(req.body);
+            const nuevaReserva = ReservaService.crear({ ...req.body, cliente: req.user.id });
             return ApiResponse.success(res, nuevaReserva, 201);
         } catch (error) {
             next(error);

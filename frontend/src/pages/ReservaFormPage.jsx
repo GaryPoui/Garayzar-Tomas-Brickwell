@@ -9,7 +9,7 @@ import {
   PageHeading,
   StatusBadge,
 } from '../components/ui.jsx'
-import { useNotification, useReservas } from '../utils/applicationContext.js'
+import { useAuth, useNotification, useReservas } from '../utils/applicationContext.js'
 import { crearReserva, modificarReserva, obtenerReserva } from '../services/reservaService.js'
 import barPhoto from '../assets/nightlife/club.jpg'
 import MesaReservaForm from '../components/MesaReservaForm.jsx'
@@ -24,7 +24,11 @@ import {
 } from '../utils/reservas.js'
 
 function ReservaForm({ original }) {
-  const [values, setValues] = useState(() => valoresIniciales(original))
+  const { user, home } = useAuth()
+  const [values, setValues] = useState(() => ({
+    ...valoresIniciales(original),
+    cliente: original?.cliente ?? user.id,
+  }))
   const [errors, setErrors] = useState({})
   const [busy, setBusy] = useState(false)
   const form = useRef(null)
@@ -64,12 +68,13 @@ function ReservaForm({ original }) {
     setBusy(true)
     try {
       const datos = prepararReserva(values, original)
+      delete datos.cliente
       const saved = original
         ? await modificarReserva(original.id, datos)
         : await crearReserva(datos)
       notify(`La reserva #${saved.id} se ${original ? 'actualizó' : 'creó'} correctamente.`)
       refresh()
-      navigate('/reservas')
+      navigate(home)
     } catch (error) {
       notify(error.message, 'error')
       setBusy(false)
@@ -113,21 +118,12 @@ function ReservaForm({ original }) {
             <span className="fieldset-number" aria-hidden="true">
               02
             </span>{' '}
-            Cliente, sector y paquete
+            Sector y paquete
           </legend>
           <p className="fieldset-description">
             Ingresá los identificadores de tus registros. Revisalos antes de guardar.
           </p>
           <div className="form-grid three-columns">
-            <Field
-              {...input('cliente')}
-              label="ID del cliente"
-              hint="Identificador del cliente registrado."
-              type="number"
-              min="1"
-              step="1"
-              placeholder="Ej.: 1"
-            />
             <Field
               {...input('sector')}
               label="ID del sector"
@@ -202,7 +198,11 @@ function ReservaForm({ original }) {
         <dl className="summary-references">
           <div>
             <dt>Cliente</dt>
-            <dd>{values.cliente ? `#${values.cliente}` : 'Sin asignar'}</dd>
+            <dd>
+              {original && original.cliente !== user.id
+                ? `Cliente #${original.cliente}`
+                : user.nombre}
+            </dd>
           </div>
           <div>
             <dt>Sector</dt>
@@ -233,7 +233,7 @@ function ReservaForm({ original }) {
         </div>
       </aside>
       <div className="form-actions">
-        <Button variant="secondary" disabled={busy} onClick={() => navigate('/reservas')}>
+        <Button variant="secondary" disabled={busy} onClick={() => navigate(home)}>
           Cancelar
         </Button>
         <Button type="submit" icon={Save} busy={busy}>
@@ -245,6 +245,7 @@ function ReservaForm({ original }) {
 }
 
 function ReservaFormPageContent({ id }) {
+  const { staff, home } = useAuth()
   const [original, setOriginal] = useState(null)
   const [loading, setLoading] = useState(Boolean(id))
   const [error, setError] = useState('')
@@ -272,12 +273,12 @@ function ReservaFormPageContent({ id }) {
 
   return (
     <>
-      <Link className="back-link" to="/reservas">
+      <Link className="back-link" to={home}>
         <ArrowLeft size={17} aria-hidden="true" />
-        Volver a reservas
+        {staff ? 'Volver a reservas' : 'Volver a mi agenda'}
       </Link>
       <PageHeading
-        title={id ? 'Editar reserva' : 'Nueva reserva'}
+        title={id ? 'Editar reserva' : staff ? 'Nueva reserva' : 'Reservar'}
         description={
           id
             ? 'Actualizá los datos de la reserva.'
