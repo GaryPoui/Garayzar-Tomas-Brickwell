@@ -73,7 +73,9 @@ El catálogo contiene tarifas de referencia y un plano orientativo, no confirmad
 
 ## Hosting y CORS
 
-`CORS_ORIGIN` acepta una lista de orígenes separados por comas. Por defecto permite GitHub Pages y desarrollo en el puerto 5173. CORS no sustituye autenticación ni protege la API de accesos fuera del navegador. `PORT` lo asigna el proveedor de hosting. La raíz del repositorio incluye `render.yaml` para crear un Blueprint en Render; no constituye un despliegue ya realizado.
+`CORS_ORIGIN` acepta una lista de orígenes separados por comas. Por defecto permite GitHub Pages y desarrollo en el puerto 5173. CORS no sustituye autenticación ni protege la API de accesos fuera del navegador. `PORT` lo asigna el proveedor de hosting.
+
+API desplegada en `https://brickwell-api.onrender.com`, servicio gratuito `brickwell-api`, raíz `backend`, Node 22, build `npm ci` y arranque `npm start`. La raíz del repositorio incluye `render.yaml` para recrear la configuración. Las peticiones iniciales pueden demorarse mientras el servicio sale de reposo; el frontend público admite hasta 90 segundos. El almacenamiento en memoria, las tarifas orientativas y la falta de autenticación limitan esta publicación a una demostración.
 
 ```bash
 npm test

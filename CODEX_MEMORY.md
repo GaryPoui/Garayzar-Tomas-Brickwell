@@ -2,6 +2,9 @@
 
 ## Ampliación del 02/11/2026
 
+- Actualización posterior: API desplegada en Render gratuito, `https://brickwell-api.onrender.com`; carpeta `backend`, Node 22, `npm ci`, `npm start`. GitHub `VITE_API_URL=https://brickwell-api.onrender.com/api`. CORS comprobado desde Pages. Mantiene memoria volátil y sin pagos ni autenticación: publicación de demostración.
+- Conversión mobile-first de los cinco CSS: base móvil y ampliaciones min-width; prueba de inicio directo a 320 px. Cliente HTTP espera hasta 90 s en producción por arranque en frío, 15 s localmente.
+
 - Catálogo real en `GET /api/catalogo`, opcionales `fecha` y `excluir`. Tres sectores orientativos, doce mesas y cuatro combos; no afirmar tarifas ni plano reales.
 - Nuevas reservas usan `MesaReservaForm`: mapa relativo al escenario, capacidades, personas y cantidades de combos. Cliente continúa por ID. Reservas antiguas sin mesa conservan el editor anterior.
 - Reservas con mesa calculan total en servidor, guardan desglose y rechazan duplicados por mesa/fecha (409). Estados pendiente, confirmada y activa ocupan; cancelada y finalizada liberan. Sin pasarela de pago ni persistencia durable.

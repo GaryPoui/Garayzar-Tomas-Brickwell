@@ -82,7 +82,7 @@ h3 {
   scroll-margin-top: 24px;
 }
 h1 {
-  font-size: 34px;
+  font-size: 30px;
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.04em;
@@ -229,7 +229,7 @@ select {
   padding: 10px 12px;
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 14px;
+  font-size: 16px;
 }
 select {
   padding-right: 28px;
@@ -319,19 +319,22 @@ select:disabled {
   animation: spin 0.9s linear infinite;
 }
 .empty-state {
-  min-height: 310px;
-  padding: 56px 48px;
-  display: grid;
+  min-height: 330px;
+  padding: 36px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   grid-template-columns: 88px minmax(0, 440px);
   column-gap: 28px;
   align-content: center;
   justify-content: center;
-  text-align: left;
+  text-align: center;
 }
 .empty-icon {
   grid-row: 1 / 4;
-  width: 88px;
-  height: 104px;
+  width: 64px;
+  height: 72px;
+  margin-bottom: 20px;
   display: grid;
   place-items: center;
   background: var(--color-surface-subtle);
@@ -344,8 +347,8 @@ select:disabled {
   height: 34px;
 }
 .empty-state h2 {
-  align-self: end;
-  font-size: 22px;
+  align-self: auto;
+  font-size: 20px;
 }
 .empty-state p {
   color: var(--color-muted);
@@ -373,7 +376,7 @@ select:disabled {
   backdrop-filter: blur(6px);
 }
 .modal-content {
-  padding: 28px;
+  padding: 20px;
 }
 .modal-heading {
   display: flex;
@@ -392,10 +395,14 @@ select:disabled {
 }
 .modal-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   justify-content: flex-end;
   padding-top: 24px;
   border-top: 1px solid var(--color-border);
+}
+.modal-actions .button {
+  flex: 1;
 }
 .delete-warning {
   display: flex;
@@ -438,8 +445,8 @@ select:disabled {
 .notifications {
   position: fixed;
   z-index: 20;
-  bottom: 24px;
-  right: 24px;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  right: 16px;
   width: min(410px, calc(100% - 32px));
   display: flex;
   flex-direction: column;
@@ -507,42 +514,41 @@ select:disabled {
     scroll-behavior: auto !important;
   }
 }
-@media (max-width: 600px) {
+@media (min-width: 601px) {
   h1 {
-    font-size: 30px;
+    font-size: 34px;
   }
   input,
   select {
-    font-size: 16px;
+    font-size: 14px;
   }
   .modal-content {
-    padding: 20px;
+    padding: 28px;
   }
   .modal-actions {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
   .modal-actions .button {
-    flex: 1;
+    flex: 0 1 auto;
   }
   .notifications {
-    right: 16px;
-    bottom: max(16px, env(safe-area-inset-bottom));
+    right: 24px;
+    bottom: 24px;
   }
   .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 36px 20px;
-    min-height: 330px;
+    display: grid;
+    align-items: normal;
+    text-align: left;
+    padding: 56px 48px;
+    min-height: 310px;
   }
   .empty-state h2 {
-    align-self: auto;
-    font-size: 20px;
+    align-self: end;
+    font-size: 22px;
   }
   .empty-icon {
-    width: 64px;
-    height: 72px;
-    margin-bottom: 20px;
+    width: 88px;
+    height: 104px;
+    margin-bottom: 0;
   }
 }

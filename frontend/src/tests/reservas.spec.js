@@ -298,6 +298,36 @@ test('mesas, mapa, combos anticipados, edición y disponibilidad real', async ({
   await expect(page.getByRole('button', { name: /^Mesa V1,/ })).toBeEnabled()
 })
 
+test('inicio móvil a 320 px: controles táctiles, resumen debajo y reserva completa', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 740 })
+  await page.goto('#/reservas/nueva')
+  await expect(page.locator('.venue-table')).toHaveCount(12)
+  await expect(page.locator('#cliente')).toHaveCSS('font-size', '16px')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  )
+  const fields = await page.locator('.form-main').boundingBox()
+  const summary = await page.locator('.form-summary').boundingBox()
+  expect(summary.y).toBeGreaterThanOrEqual(fields.y + fields.height)
+  expect(
+    await page.locator('.venue-table').evaluateAll((buttons) =>
+      buttons.every((button) => {
+        const bounds = button.getBoundingClientRect()
+        return bounds.width >= 44 && bounds.height >= 44
+      }),
+    ),
+  ).toBe(true)
+  await page.locator('#cliente').fill('12')
+  await page.getByRole('button', { name: /^Mesa B1,/ }).click()
+  await page.getByRole('button', { name: 'Agregar Gin + tónicas' }).click()
+  await expect(page.locator('#precioTotal')).toHaveValue(/75\.000,00/)
+  await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
+  await expect(page.locator('.reservation-row')).toContainText('Barra · B1')
+  await checkAccessibility(page)
+})
+
 test('catálogo fallido y mesa ocupada durante el envío: error y recuperación', async ({
   page,
   request,

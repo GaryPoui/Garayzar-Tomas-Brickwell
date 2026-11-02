@@ -4,6 +4,8 @@ Sitio público de BRICKWEEL Pub Bar & Night Club, con carta de tragos interactiv
 
 Web: https://garypoui.github.io/Garayzar-Tomas-Brickwell/
 
+API pública: https://brickwell-api.onrender.com/api/catalogo
+
 - [Backend](backend/README.md): API REST Express y arquitectura MVC de la Entrega 2.
 - [Frontend](frontend/README.md): aplicación React, integración, diseño, accesibilidad y pruebas.
 - [Modelo del dominio](2.Modelo%20del%20dominio.md): entidades y relaciones del sistema.
@@ -29,7 +31,9 @@ npm --prefix frontend run dev
 
 Frontend: http://localhost:5173/Garayzar-Tomas-Brickwell/. API: http://localhost:3000/api/reservas.
 
-Las reservas se guardan en memoria y se pierden al reiniciar el backend. GitHub Pages sirve la portada y la carta; las operaciones de reservas necesitan la API Express alojada por separado. La [dirección de la nueva portada](frontend/design-review/landing-direction.md) documenta la referencia, las imágenes y el alcance del contenido.
+Las reservas se guardan en memoria y se pierden al reiniciar el backend. GitHub Pages sirve el frontend y se conecta con la API Express desplegada en Render. El servicio gratuito puede tardar hasta 90 segundos en responder al salir de reposo; la aplicación mantiene el estado de carga y permite cancelar al navegar. La [dirección de la portada](frontend/design-review/landing-direction.md) documenta las referencias y las imágenes.
+
+La interfaz usa estilos base para móvil y ampliaciones con `min-width` en tablet y escritorio. Las pruebas incluyen inicio directo a 320 px, controles táctiles, accesibilidad, mapa, carta y pantallas hasta 1920 px.
 
 ## Mesas y combos
 
@@ -39,9 +43,9 @@ El plano y las tarifas son de referencia, no datos confirmados del local. Los co
 
 ## Publicar la API
 
-`render.yaml` prepara un servicio Node en el plan gratuito de Render. Crear un Blueprint con este repositorio en una cuenta propia de Render. Una vez desplegado, configurar la variable del repositorio GitHub `VITE_API_URL` con la URL HTTPS del servicio terminada en `/api` y volver a ejecutar el workflow de Pages. El backend ya permite CORS desde `https://garypoui.github.io`.
+La API está desplegada en `https://brickwell-api.onrender.com`, con carpeta raíz `backend`, Node 22, `npm ci` y `npm start`, en el plan gratuito. La variable de GitHub `VITE_API_URL` apunta a `https://brickwell-api.onrender.com/api`. El backend permite CORS desde `https://garypoui.github.io`. Los cambios de frontend se publican mediante GitHub Actions y los de backend se despliegan desde `main` en Render. `render.yaml` conserva una configuración equivalente para recrear el servicio.
 
-Subir el repositorio y publicar Pages no inicia este servicio. La memoria se pierde al reiniciar o suspender la API: antes de aceptar reservas o pagos reales hacen falta persistencia, autenticación, tarifas y plano confirmados.
+La memoria se pierde al reiniciar o suspender la API: esta es una publicación de demostración. Antes de aceptar reservas o pagos reales hacen falta persistencia, autenticación, tarifas y plano confirmados.
 
 ## Pruebas
 

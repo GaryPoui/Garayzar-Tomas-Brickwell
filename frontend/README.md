@@ -63,7 +63,7 @@ Las pruebas unitarias están junto al servicio y las funciones que verifican. La
 - El detalle consulta `GET /api/reservas/:id`; eliminar requiere confirmar en un diálogo.
 - Las rutas inexistentes muestran una pantalla de recuperación.
 
-Los filtros quedan en la URL. Se muestran estados de carga, listados vacíos, errores de red/API y notificaciones de éxito. Los controles se bloquean durante un envío. Las consultas tienen un límite de 15 segundos y se cancelan al abandonar la pantalla.
+Los filtros quedan en la URL. Se muestran estados de carga, listados vacíos, errores de red/API y notificaciones de éxito. Los controles se bloquean durante un envío. Las consultas tienen un límite de 15 segundos en desarrollo y 90 segundos en producción para contemplar el arranque en frío de Render gratuito; se cancelan al abandonar la pantalla.
 
 ## Integración
 
@@ -91,6 +91,7 @@ Reiniciar Vite después de cambiarlas. `API_PROXY_TARGET` solo configura el prox
 - Notificaciones dentro del diálogo cuando está abierto, anunciadas con `role="alert"` o `role="status"`.
 - Estados con texto además de color, iconos con nombres accesibles, imagen con alternativa textual y respeto por movimiento reducido.
 - Diseño responsivo probado entre 320 y 1440 px; auditoría automatizada axe para reglas WCAG A/AA en los estados cubiertos. No reemplaza una auditoría manual integral.
+- Enfoque mobile-first: base móvil y mejoras progresivas con `min-width` en los cinco archivos CSS. La prueba que inicia a 320 px comprueba campos de 16 px, controles táctiles de al menos 44 px y el resumen debajo del formulario.
 
 ## Diseño e identidad
 
@@ -140,4 +141,4 @@ npm run preview
 
 Preview sirve el build local y utiliza el mismo proxy, con la API encendida. `.github/workflows/pages.yml` compila y publica `frontend/dist` al actualizar `main`. Pages debe tener **GitHub Actions** como fuente y no necesita dominio personalizado. La base de Vite es `/Garayzar-Tomas-Brickwell/` y las rutas usan hash.
 
-GitHub Pages no ejecuta Express ni el proxy de Vite. Para habilitar reservas en producción, alojar la API por separado, permitir CORS desde `https://garypoui.github.io` y definir la variable del repositorio `VITE_API_URL` con su URL HTTPS terminada en `/api`. Volver a ejecutar el workflow después de cambiarla. Es una URL pública, no un secreto.
+GitHub Pages no ejecuta Express ni el proxy de Vite. La API ya está desplegada en `https://brickwell-api.onrender.com`, permite CORS desde `https://garypoui.github.io` y la variable del repositorio `VITE_API_URL` contiene `https://brickwell-api.onrender.com/api`. Al recrear o cambiar el servicio hay que actualizar esa variable y volver a publicar Pages. Es una URL pública, no un secreto. El plan gratuito suspende la API por inactividad y su almacenamiento sigue siendo temporal: no es un sistema preparado para pagos ni reservas comerciales definitivas.

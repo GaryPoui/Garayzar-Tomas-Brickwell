@@ -1,4 +1,5 @@
 const API_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '')
+const REQUEST_TIMEOUT = import.meta.env?.PROD ? 90000 : 15000
 
 export async function requestApi(path, { signal, ...options } = {}) {
   let response
@@ -6,8 +7,8 @@ export async function requestApi(path, { signal, ...options } = {}) {
     response = await fetch(`${API_URL}${path}`, {
       ...options,
       signal: signal
-        ? AbortSignal.any([signal, AbortSignal.timeout(15000)])
-        : AbortSignal.timeout(15000),
+        ? AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT)])
+        : AbortSignal.timeout(REQUEST_TIMEOUT),
       headers: { 'Content-Type': 'application/json', ...options.headers },
     })
   } catch (error) {
