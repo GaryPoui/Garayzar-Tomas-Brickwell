@@ -1,5 +1,16 @@
 # Memoria de Codex — Brickell’s
 
+## Ampliación del 02/11/2026
+
+- Catálogo real en `GET /api/catalogo`, opcionales `fecha` y `excluir`. Tres sectores orientativos, doce mesas y cuatro combos; no afirmar tarifas ni plano reales.
+- Nuevas reservas usan `MesaReservaForm`: mapa relativo al escenario, capacidades, personas y cantidades de combos. Cliente continúa por ID. Reservas antiguas sin mesa conservan el editor anterior.
+- Reservas con mesa calculan total en servidor, guardan desglose y rechazan duplicados por mesa/fecha (409). Estados pendiente, confirmada y activa ocupan; cancelada y finalizada liberan. Sin pasarela de pago ni persistencia durable.
+- Backend con CORS configurable (`CORS_ORIGIN`) y plantilla `render.yaml`; GitHub Pages NO aloja la API. Desplegar API con cuenta propia y configurar `VITE_API_URL` antes de afirmar integración pública.
+- La última hoja animada de la carta comparte contenido y estilos con el índice interactivo, incluidas categorías y paginación. Giro de tapa 1,1 s; tres hojas escalonadas completan en 1,26 s.
+- `npm --prefix backend test` verifica catálogo, CORS, importes, combos, capacidad y disponibilidad por HTTP; E2E de frontend amplía mapa, errores de catálogo y conflicto de mesa.
+
+Las notas siguientes son históricas; los puntos anteriores reemplazan las limitaciones antiguas de catálogo y formulario.
+
 Actualizada el 26 de octubre de 2026.
 
 ## Proyecto y decisiones aceptadas

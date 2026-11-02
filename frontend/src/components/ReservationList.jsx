@@ -32,8 +32,16 @@ export default function ReservationList({ reservas, onDetail, onDelete }) {
               <small className="reservation-time">{reserva.horario} h</small>
             </div>
             <div className="row-cell">
-              <strong>Sector {referencia(reserva.sector)}</strong>
-              <small>Paquete {referencia(reserva.paquete)}</small>
+              <strong>
+                {reserva.detalleMesa
+                  ? `${reserva.detalleMesa.sectorNombre} · ${reserva.detalleMesa.nombre}`
+                  : `Sector ${referencia(reserva.sector)}`}
+              </strong>
+              <small>
+                {reserva.mesa
+                  ? `${reserva.personas} personas · ${reserva.combos.reduce((total, item) => total + item.cantidad, 0)} combos`
+                  : `Paquete ${referencia(reserva.paquete)}`}
+              </small>
             </div>
             <div className="row-cell">
               <span className="mobile-label">Importe total</span>

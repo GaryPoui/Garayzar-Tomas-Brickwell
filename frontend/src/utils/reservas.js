@@ -102,6 +102,9 @@ export function filtrarReservas(reservas, { search = '', estado = '', fecha = ''
         referencia(reserva.cliente),
         referencia(reserva.sector),
         referencia(reserva.paquete),
+        reserva.detalleMesa?.nombre,
+        reserva.detalleMesa?.sectorNombre,
+        ...(reserva.combos || []).map((item) => item.nombre),
       ]
         .join(' ')
         .toLocaleLowerCase('es-AR')

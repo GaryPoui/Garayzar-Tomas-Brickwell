@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: brickwell-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: CORS_ORIGIN
+        value: https://garypoui.github.io

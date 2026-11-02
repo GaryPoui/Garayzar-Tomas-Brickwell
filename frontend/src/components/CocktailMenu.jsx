@@ -194,7 +194,6 @@ export default function CocktailMenu() {
   const [selectedId, setSelectedId] = useState(drinks[0].id)
   const [opened, setOpened] = useState(false)
   const [openComplete, setOpenComplete] = useState(false)
-  const flap = useRef(null)
   const book = useRef(null)
   const cover = useRef(null)
   const returnToCover = useRef(false)
@@ -211,7 +210,9 @@ export default function CocktailMenu() {
   useEffect(() => {
     if (!opened) return
     let active = true
-    const animations = flap.current.getAnimations()
+    const animations = Array.from(book.current.querySelectorAll('.menu-flap, .menu-leaf')).flatMap(
+      (element) => element.getAnimations(),
+    )
     Promise.all(animations.map((animation) => animation.finished.catch(() => {}))).then(() => {
       if (active) setOpenComplete(true)
     })
@@ -251,6 +252,88 @@ export default function CocktailMenu() {
   function step(direction) {
     setSelectedId(
       visibleDrinks[(selectedIndex + direction + visibleDrinks.length) % visibleDrinks.length].id,
+    )
+  }
+
+  function renderIndex(preview = false) {
+    return (
+      <>
+        <div className="menu-page-top">
+          <span>BRICKWELL</span>
+          <span>Bar & night club</span>
+        </div>
+        <h3>La carta.</h3>
+        <div className="drink-filters" role="group" aria-label="Filtrar tragos">
+          {categories.map((item) => (
+            <button
+              type="button"
+              key={item}
+              aria-pressed={category === item}
+              onClick={() => changeCategory(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+        <div
+          className="drink-list"
+          key={`${category}-${pageIndex}`}
+          aria-label="Tragos disponibles en la carta"
+        >
+          {pageDrinks.map((drink) => (
+            <button
+              type="button"
+              key={drink.id}
+              className={drink.id === selectedId ? 'is-selected' : ''}
+              aria-pressed={drink.id === selectedId}
+              aria-controls={preview ? undefined : 'drink-detail'}
+              aria-label={`${drink.name} ${drink.category}`}
+              aria-describedby={preview ? undefined : `menu-price-${drink.id}`}
+              onClick={() => chooseDrink(drink.id)}
+            >
+              <span>
+                <strong>{drink.name}</strong>
+                <small>{drink.category}</small>
+              </span>
+              <span
+                className="drink-list-price"
+                id={preview ? undefined : `menu-price-${drink.id}`}
+              >
+                {moneda(drink.price)}
+              </span>
+              <ArrowUpRight size={24} strokeWidth={1.3} aria-hidden="true" />
+            </button>
+          ))}
+        </div>
+        <nav className="menu-page-navigation" aria-label="Páginas de la carta">
+          <button
+            type="button"
+            aria-label="Página anterior de la carta"
+            title="Página anterior"
+            disabled={pageIndex === 0}
+            onClick={() => setSelectedId(visibleDrinks[(pageIndex - 1) * pageSize].id)}
+          >
+            <ChevronLeft size={20} aria-hidden="true" />
+          </button>
+          <span aria-live={preview ? undefined : 'polite'}>
+            Página {pageIndex + 1} de {pageCount}
+          </span>
+          <button
+            type="button"
+            aria-label="Página siguiente de la carta"
+            title="Página siguiente"
+            disabled={pageIndex === pageCount - 1}
+            onClick={() => setSelectedId(visibleDrinks[(pageIndex + 1) * pageSize].id)}
+          >
+            <ChevronRight size={20} aria-hidden="true" />
+          </button>
+        </nav>
+        <p className="menu-footnote">
+          Precios de ejemplo en ARS, sujetos a confirmación del local.
+          <br />
+          Imágenes de ambientación. Consultá disponibilidad en la barra.
+        </p>
+      </>
     )
   }
 
@@ -302,7 +385,33 @@ export default function CocktailMenu() {
         >
           <X size={18} aria-hidden="true" />
         </button>
-        <div className="menu-flap" ref={flap}>
+        <div className="menu-leaves" aria-hidden="true" inert>
+          {[0, 1, 2].map((index) => (
+            <div
+              className={`menu-leaf ${index === 2 ? 'menu-leaf-prices' : ''}`}
+              key={index}
+              style={{ '--leaf-index': index }}
+            >
+              {index === 2 ? (
+                [false, true].map((back) => (
+                  <div
+                    className={`menu-index menu-leaf-price-face ${back ? 'is-back' : ''}`}
+                    key={String(back)}
+                  >
+                    {renderIndex(true)}
+                  </div>
+                ))
+              ) : (
+                <>
+                  <span>BRICKWELL</span>
+                  <img src={[whiskyPhoto, citrusPhoto][index]} alt="" />
+                  <span>{['Clásicos', 'Frescos'][index]}</span>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="menu-flap">
           <button
             type="button"
             className="menu-cover"
@@ -324,80 +433,7 @@ export default function CocktailMenu() {
         </div>
 
         <div id="cocktail-pages" className="menu-pages" inert={!openComplete}>
-          <div className="menu-index">
-            <div className="menu-page-top">
-              <span>BRICKWELL</span>
-              <span>Bar & night club</span>
-            </div>
-            <h3>La carta.</h3>
-            <div className="drink-filters" role="group" aria-label="Filtrar tragos">
-              {categories.map((item) => (
-                <button
-                  type="button"
-                  key={item}
-                  aria-pressed={category === item}
-                  onClick={() => changeCategory(item)}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-            <div
-              className="drink-list"
-              key={`${category}-${pageIndex}`}
-              aria-label="Tragos disponibles en la carta"
-            >
-              {pageDrinks.map((drink) => (
-                <button
-                  type="button"
-                  key={drink.id}
-                  className={drink.id === selectedId ? 'is-selected' : ''}
-                  aria-pressed={drink.id === selectedId}
-                  aria-controls="drink-detail"
-                  aria-label={`${drink.name} ${drink.category}`}
-                  aria-describedby={`menu-price-${drink.id}`}
-                  onClick={() => chooseDrink(drink.id)}
-                >
-                  <span>
-                    <strong>{drink.name}</strong>
-                    <small>{drink.category}</small>
-                  </span>
-                  <span className="drink-list-price" id={`menu-price-${drink.id}`}>
-                    {moneda(drink.price)}
-                  </span>
-                  <ArrowUpRight size={24} strokeWidth={1.3} aria-hidden="true" />
-                </button>
-              ))}
-            </div>
-            <nav className="menu-page-navigation" aria-label="Páginas de la carta">
-              <button
-                type="button"
-                aria-label="Página anterior de la carta"
-                title="Página anterior"
-                disabled={pageIndex === 0}
-                onClick={() => setSelectedId(visibleDrinks[(pageIndex - 1) * pageSize].id)}
-              >
-                <ChevronLeft size={20} aria-hidden="true" />
-              </button>
-              <span aria-live="polite">
-                Página {pageIndex + 1} de {pageCount}
-              </span>
-              <button
-                type="button"
-                aria-label="Página siguiente de la carta"
-                title="Página siguiente"
-                disabled={pageIndex === pageCount - 1}
-                onClick={() => setSelectedId(visibleDrinks[(pageIndex + 1) * pageSize].id)}
-              >
-                <ChevronRight size={20} aria-hidden="true" />
-              </button>
-            </nav>
-            <p className="menu-footnote">
-              Precios de ejemplo en ARS, sujetos a confirmación del local.
-              <br />
-              Imágenes de ambientación. Consultá disponibilidad en la barra.
-            </p>
-          </div>
+          <div className="menu-index">{renderIndex()}</div>
 
           <div
             id="drink-detail"

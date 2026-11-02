@@ -8,7 +8,7 @@ El inicio presenta BRICKWEEL como una escena 3D casi de pantalla completa, con l
 
 `HomePage.jsx`, `HeroWordmark.jsx`, `CocktailMenu.jsx` y `home.css` contienen esta experiencia. Three.js y la fuente Helvetiker Bold local se cargan bajo demanda para el título; se conserva un nombre visible si WebGL no está disponible. El render se detiene cuando el título sale de pantalla o la pestaña queda oculta. Las fotografías, la textura y las fuentes se sirven localmente. La carta contiene 14 opciones, incluidos cuatro combos: Smirnoff + Speed, Smirnoff + Sprite, Branca + Coca-Cola y Gin + tónicas. Sus importes en ARS son precios de ejemplo, no tarifas confirmadas del local; la interfaz lo indica junto al precio y al pie. Las imágenes son de ambientación y no representan los combos ofrecidos. Referencias, fuentes y decisiones: [landing-direction.md](design-review/landing-direction.md).
 
-La carta cerrada combina una fotografía de ambientación a la izquierda y la tapa a la derecha. La tapa tiene dos caras y gira 180 grados sobre una bisagra central, con elevación, una ligera inclinación y desaceleración al apoyarse sobre la fotografía. La cruz permanece oculta y los controles interiores inactivos hasta que terminan las animaciones reales de la tapa; con movimiento reducido quedan disponibles de inmediato. Al cerrar, el foco vuelve a la portada. En escritorio se conserva el espacio del libro; en móvil las páginas abiertas se apilan para mantener la legibilidad. El catálogo se divide en páginas de cuatro opciones con flechas anterior/siguiente y contador, además de los controles de trago individual. Los filtros y la selección mantienen sincronizada la página visible.
+La carta cerrada combina una fotografía de ambientación a la izquierda y la tapa a la derecha. La tapa tiene dos caras y gira 180 grados sobre una bisagra central, con una transición reversible de 1,1 segundos. Durante la apertura pasan tres hojas con fotografías, escalonadas cada 120 ms; la secuencia completa dura 1,26 segundos. La cruz permanece oculta y los controles interiores inactivos hasta que terminan los giros de la tapa y las hojas; con movimiento reducido quedan disponibles de inmediato y no se animan las hojas. Al cerrar, el foco vuelve a la portada. En escritorio se conserva el espacio del libro; en móvil las páginas abiertas se apilan para mantener la legibilidad. El catálogo se divide en páginas de cuatro opciones con flechas anterior/siguiente y contador, además de los controles de trago individual. Los filtros y la selección mantienen sincronizada la página visible.
 
 La sección La noche presenta el pub bar y boliche en Necochea, con textos sobre la pista, la barra y los encuentros en grupo. No se agregan horarios, promociones ni servicios sin confirmar.
 
@@ -56,9 +56,9 @@ Las pruebas unitarias están junto al servicio y las funciones que verifican. La
 
 ## Pantallas y operaciones
 
-- `/reservas`: resumen calculado con datos reales, listado, búsqueda por ID de reserva/cliente/sector/paquete, filtros por fecha y estado, y paginación de ocho registros.
+- `/reservas`: tipos de mesa con precios y capacidad desde la API, resumen con datos reales, listado, búsqueda por ID, nombre de mesa/sector/combos, filtros y paginación de ocho registros.
 - `/agenda`: reservas desde hoy, agrupadas por fecha y sin canceladas.
-- `/reservas/nueva`: creación con estado inicial `PENDIENTE` asignado por el servidor.
+- `/reservas/nueva`: fecha, personas, sector y mesa en un mapa orientativo respecto al escenario; combos anticipados con cantidades y total calculado por el servidor. Estado inicial `PENDIENTE`.
 - `/reservas/:id/editar`: consulta individual y modificación de datos y estado.
 - El detalle consulta `GET /api/reservas/:id`; eliminar requiere confirmar en un diálogo.
 - Las rutas inexistentes muestran una pantalla de recuperación.
@@ -67,7 +67,7 @@ Los filtros quedan en la URL. Se muestran estados de carga, listados vacíos, er
 
 ## Integración
 
-`src/services/reservaService.js` centraliza los cinco endpoints `GET`, `POST`, `PUT` y `DELETE` de `/api/reservas`. Interpreta `{ success, data }` y conserva los mensajes `{ success: false, message }`. No hay llamadas a `fetch` en componentes o páginas.
+`src/services/reservaService.js` centraliza los cinco endpoints de `/api/reservas`; `catalogoService.js` consulta `/api/catalogo` con fecha y exclusión de la propia reserva. Ambos usan `apiClient.js` para interpretar `{ success, data }`, errores y códigos HTTP. No hay llamadas a `fetch` en componentes o páginas.
 
 Por defecto se utiliza `/api` y el proxy de Vite apunta a `http://localhost:3000`, tanto en desarrollo como en preview. Esto permite usar el backend original sin modificar su configuración CORS.
 
@@ -94,23 +94,23 @@ Reiniciar Vite después de cambiarlas. `API_PROXY_TARGET` solo configura el prox
 
 ## Diseño e identidad
 
-La portada del 27/10/2026 sigue el nuevo pedido basado en DEEO Studio: negro, volumen 3D con cantos de color sin acabado plateado, fotografías grandes y carta con aspecto de libro. Helvetiker Bold para el título 3D, Barlow Condensed para el resto de la marca, Georgia para los títulos editoriales y Manrope para navegación y textos. La carta destaca BRICKWELL en la tapa y abre en 2,8 segundos; con movimiento reducido no se anima. El resto del sitio conserva la marca BRICKWEEL. Las capturas están en `design-review/home-*.png` y `design-review/carta-*.png`.
+La portada del 27/10/2026 sigue el nuevo pedido basado en DEEO Studio: negro, volumen 3D con cantos de color sin acabado plateado, fotografías grandes y carta con aspecto de libro. Helvetiker Bold para el título 3D, Barlow Condensed para el resto de la marca, Georgia para los títulos editoriales y Manrope para navegación y textos. La carta destaca BRICKWELL en la tapa, abre con tres hojas escalonadas en 1,26 segundos y cierra en 1,1 segundos; con movimiento reducido no se anima. El resto del sitio conserva la marca BRICKWEEL. Las capturas están en `design-review/home-*.png` y `design-review/carta-*.png`.
 
 ### Área de reservas
 
 El área de reservas continúa el lenguaje de la portada: fondo negro `#080809`, superficies `#141416`, texto claro y acciones verde pálido `#D3EFB1`. La navegación superior sustituye a la barra lateral, el resumen se presenta como una franja de datos y el listado y el formulario usan secciones abiertas, sin paneles blancos. Los diálogos y las notificaciones, incluidos los portales, comparten el tema oscuro. Las variables semánticas `--color-*` están en `src/styles/global.css`; `layout.css` define la estructura y `reservas.css` las vistas operativas. Los estados tienen etiquetas y colores propios; las acciones destructivas se distinguen en rosa.
 
-Manrope se sirve localmente para datos y formularios, Georgia para títulos y Barlow Condensed para la marca, que permite volver al sitio público. Las filas alternan fondos sutiles y destacan horario y estado, siempre acompañado de su etiqueta textual. El formulario utiliza secciones numeradas y una ficha con fotografía de ambientación, referencias de cliente/sector/paquete y saldo actualizado durante la edición. Este rediseño de reservas no agrega dependencias ni modifica el contrato de la API.
+Manrope se sirve localmente para datos y formularios, Georgia para títulos y Barlow Condensed para la marca. Las filas destacan horario y estado, siempre con etiqueta textual. El formulario nuevo muestra fecha, personas, cliente, sector, mapa de mesas, cantidades de combos y resumen del costo. `booking.css` conserva el tema oscuro, con colores independientes para las tres zonas. Las reservas previas sin mesa conservan el formulario de la Entrega 2.
 
-El listado reúne búsqueda, fecha y estado, muestra los filtros activos y conserva los parámetros en la URL. La agenda agrupa por fecha las reservas desde hoy sin canceladas. El formulario organiza fecha/horario, referencias e importes, con un resumen que pasa debajo de los campos en móvil. Los IDs se explican sin inventar catálogos.
+El listado conserva filtros y parámetros en la URL. La agenda agrupa por fecha las reservas desde hoy sin canceladas. El mapa tiene botones accesibles con nombre de mesa, precio, capacidad y disponibilidad; los colores no sustituyen esos textos. Las mesas ocupadas o de capacidad insuficiente no se pueden seleccionar. Ante un conflicto HTTP 409 se actualiza la disponibilidad sin borrar los combos elegidos. El resumen pasa debajo de los campos en móvil.
 
-El panel se implementó a partir de los tres Word incorporados al repositorio, sus imágenes y el modelo del dominio. Ese alcance anterior priorizaba la gestión; el pedido del 27/10 añade la portada pública como inicio. El documento final también describe funciones futuras que la API todavía no implementa, incluidos autenticación, eventos, disponibilidad y pagos.
+El panel se implementó a partir de los documentos del repositorio. La ampliación del 02/11 incorpora selección de mesas, disponibilidad por noche y combos. Autenticación, eventos y pagos en línea siguen fuera del alcance implementado.
 
 La dirección, las referencias consultadas y las limitaciones están documentadas en [design-review/README.md](design-review/README.md). Allí también se enlazan las capturas del rediseño.
 
 ## Alcance del backend
 
-La API existente solamente implementa el CRUD de reservas. Clientes, sectores y paquetes se ingresan por ID porque no hay endpoints de catálogo. La carta de la portada es contenido editorial estático. No se simulan eventos, entradas, autenticación ni disponibilidad. Incorporar la gestión de esos módulos requiere desarrollar sus APIs.
+La API implementa CRUD de reservas y catálogo de sectores, mesas y paquetes. Solo se solicita el ID del cliente; no hay registro ni autenticación. La mesa y los combos se eligen por nombre y la API calcula su total. El catálogo y el mapa son orientativos, con tarifas de referencia visibles, pendientes de confirmación por el local. Los combos se reservan junto con la mesa y se pagan según lo coordinado con el local; no hay cobros en línea. La carta de la portada sigue siendo contenido editorial estático.
 
 Las reservas se almacenan en memoria: reiniciar el backend elimina los datos. El frontend no agrega persistencia local para ocultar esa limitación. La validación visual no sustituye las validaciones ni la autorización que necesite el servidor en producción.
 

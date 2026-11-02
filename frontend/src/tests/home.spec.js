@@ -112,7 +112,7 @@ test('portada independiente, navegación por secciones y carta interactiva', asy
   await expect(page.locator('.gallery-story')).toHaveCount(2)
   await expect(page.locator('.menu-book')).not.toHaveClass(/is-open/)
   await expect(page.locator('.menu-cover strong')).toHaveText('BRICKWELL')
-  await expect(page.locator('.menu-flap')).toHaveCSS('transition-duration', '2.8s')
+  await expect(page.locator('.menu-flap')).toHaveCSS('transition-duration', '1.1s')
   await page.getByRole('link', { name: 'Tragos', exact: true }).click()
   await expect(page.locator('#tragos')).toBeInViewport()
   await page.locator('.menu-book').scrollIntoViewIfNeeded()
@@ -126,12 +126,12 @@ test('portada independiente, navegación por secciones y carta interactiva', asy
   await page.getByRole('button', { name: 'Trago siguiente', exact: true }).click()
   await expect(page.locator('#drink-detail h3')).toHaveText('Negroni')
   await page.getByRole('button', { name: 'Sin alcohol', exact: true }).click()
-  await expect(page.locator('.drink-list > button')).toHaveCount(2)
+  await expect(page.locator('.menu-pages .drink-list > button')).toHaveCount(2)
   await expect(page.locator('#drink-detail h3')).toHaveText('Citrus & menta')
   await page.getByRole('button', { name: 'Trago siguiente' }).click()
   await expect(page.locator('#drink-detail h3')).toHaveText('Pomelo & romero')
   await page.getByRole('button', { name: 'Combos', exact: true }).click()
-  await expect(page.locator('.drink-list > button')).toHaveCount(4)
+  await expect(page.locator('.menu-pages .drink-list > button')).toHaveCount(4)
   await expect(page.locator('#drink-detail h3')).toHaveText('Smirnoff + Speed')
   await expect(page.locator('.drink-price')).toContainText('38.000,00')
   await expect(page.locator('.drink-price')).toContainText('Precio de ejemplo')
@@ -139,14 +139,14 @@ test('portada independiente, navegación por secciones y carta interactiva', asy
   await page.getByRole('button', { name: 'Trago anterior' }).click()
   await expect(page.locator('#drink-detail h3')).toHaveText('Gin + tónicas')
   await page.getByRole('button', { name: 'Todos', exact: true }).click()
-  await expect(page.locator('.drink-list > button')).toHaveCount(2)
-  await expect(page.locator('.menu-page-navigation')).toContainText('Página 4 de 4')
+  await expect(page.locator('.menu-pages .drink-list > button')).toHaveCount(2)
+  await expect(page.locator('.menu-pages .menu-page-navigation')).toContainText('Página 4 de 4')
   await expect(page.getByRole('button', { name: 'Página siguiente de la carta' })).toBeDisabled()
   await page.getByRole('button', { name: 'Página anterior de la carta' }).click()
-  await expect(page.locator('.drink-list > button')).toHaveCount(4)
-  await expect(page.locator('.menu-page-navigation')).toContainText('Página 3 de 4')
+  await expect(page.locator('.menu-pages .drink-list > button')).toHaveCount(4)
+  await expect(page.locator('.menu-pages .menu-page-navigation')).toContainText('Página 3 de 4')
   await page.getByRole('button', { name: 'Página siguiente de la carta' }).click()
-  await expect(page.locator('.menu-page-navigation')).toContainText('Página 4 de 4')
+  await expect(page.locator('.menu-pages .menu-page-navigation')).toContainText('Página 4 de 4')
   await page.getByRole('button', { name: 'Cerrar carta' }).click()
   await expect(page.locator('.menu-book')).not.toHaveClass(/is-open/)
   await expect(page.getByRole('button', { name: 'Abrir carta de tragos' })).toBeFocused()
@@ -166,7 +166,9 @@ test('portada independiente, navegación por secciones y carta interactiva', asy
   expect(errors).toEqual([])
 })
 
-test('tapa con bisagra y cruz oculta hasta completar la apertura', async ({ page }) => {
+test('tapa con bisagra y hojas escalonadas antes de habilitar la carta', async ({
+  page,
+}, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.goto('./')
   const book = page.locator('.menu-book')
@@ -179,37 +181,143 @@ test('tapa con bisagra y cruz oculta hasta completar la apertura', async ({ page
   const coverBounds = await cover.boundingBox()
   expect(Math.abs(photoBounds.x + photoBounds.width - coverBounds.x)).toBeLessThan(1)
   await cover.click()
-  await flap.evaluate((element) =>
-    element.getAnimations().forEach((animation) => {
+  const openingDurations = await flap.evaluate((element) =>
+    element.getAnimations().map((animation) => {
+      const duration = animation.effect.getTiming().duration
       animation.pause()
-      animation.currentTime = 1300
+      animation.currentTime = duration / 2
+      return duration
     }),
   )
+  expect(openingDurations).toEqual([1100])
+  const leaves = page.locator('.menu-leaf')
+  await expect(leaves).toHaveCount(3)
+  const priceLeaf = leaves.last()
+  await expect(priceLeaf.locator('img')).toHaveCount(0)
+  await expect(priceLeaf.locator('.menu-leaf-price-face')).toHaveCount(2)
+  for (const face of await priceLeaf.locator('.menu-leaf-price-face').all()) {
+    await expect(face.locator('.drink-list strong')).toHaveText([
+      'Old Fashioned',
+      'Mojito',
+      'Negroni',
+      'Caipirinha',
+    ])
+    await expect(face.locator('.drink-list-price')).toContainText([
+      '9.000,00',
+      '7.500,00',
+      '8.500,00',
+      '7.500,00',
+    ])
+    await expect(face.locator('.drink-filters button')).toHaveText([
+      'Todos',
+      'Clásicos',
+      'Frescos',
+      'Sin alcohol',
+      'Combos',
+    ])
+    await expect(face.locator('.menu-page-navigation')).toContainText('Página 1 de 4')
+    await expect(face).toHaveCSS('backface-visibility', 'hidden')
+  }
+  const leafTimings = await leaves.evaluateAll((elements) =>
+    elements.map((element) => {
+      const animation = element.getAnimations()[0]
+      const { duration, delay } = animation.effect.getTiming()
+      animation.pause()
+      animation.currentTime = 650
+      return { duration, delay }
+    }),
+  )
+  expect(leafTimings).toEqual([
+    { duration: 900, delay: 120 },
+    { duration: 900, delay: 240 },
+    { duration: 900, delay: 360 },
+  ])
+  const leafTransforms = await leaves.evaluateAll((elements) =>
+    elements.map((element) => getComputedStyle(element).transform),
+  )
+  expect(new Set(leafTransforms).size).toBe(3)
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 1000 })
+    await expect(leaves.first()).toHaveCSS('opacity', '1')
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true)
+    await book.screenshot({ path: testInfo.outputPath(`hojas-${width}.png`) })
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 })
   await expect(close).toBeHidden()
   await expect(page.locator('#cocktail-pages')).toHaveAttribute('inert', '')
   await expect(book).not.toHaveClass(/is-ready/)
   await flap.evaluate((element) =>
     element.getAnimations().forEach((animation) => animation.finish()),
   )
+  await expect(book).not.toHaveClass(/is-ready/)
+  await expect(close).toBeHidden()
+  await leaves.evaluateAll((elements) =>
+    elements
+      .slice(0, 2)
+      .forEach((element) => element.getAnimations().forEach((animation) => animation.finish())),
+  )
+  await priceLeaf.evaluate((element) => {
+    const animation = element.getAnimations()[0]
+    const { delay, duration } = animation.effect.getTiming()
+    animation.currentTime = delay + duration * 0.75
+  })
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 1000 })
+    expect(
+      await priceLeaf.locator('.is-back').evaluate((face) =>
+        Array.from(
+          face.querySelectorAll('.drink-list strong, .drink-list-price, .menu-page-navigation'),
+        ).every((element) => {
+          const bounds = element.getBoundingClientRect()
+          const parent = face.getBoundingClientRect()
+          return bounds.top >= parent.top && bounds.bottom <= parent.bottom
+        }),
+      ),
+    ).toBe(true)
+    await book.screenshot({ path: testInfo.outputPath(`ultima-hoja-precios-${width}.png`) })
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await leaves.evaluateAll((elements) =>
+    elements.forEach((element) =>
+      element.getAnimations().forEach((animation) => animation.finish()),
+    ),
+  )
   await expect(flap).toHaveCSS(
     'transform',
     'matrix3d(-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1)',
   )
-  await expect(page.locator('.menu-index')).toHaveCSS('opacity', '1')
+  await book.scrollIntoViewIfNeeded()
+  await expect(page.locator('.menu-pages > .menu-index')).toHaveCSS('opacity', '1')
   await expect(close).toBeVisible()
   await expect(close).toBeFocused()
   await expect(page.locator('#cocktail-pages')).not.toHaveAttribute('inert', '')
   expect(Math.abs((await book.boundingBox()).height - closedBounds.height)).toBeLessThan(1)
   expect(
-    await page.locator('.menu-index').evaluate((index) => {
+    await page.locator('.menu-pages > .menu-index').evaluate((index) => {
       const bounds = index.getBoundingClientRect()
       return index.contains(document.elementFromPoint(bounds.x + 20, bounds.y + 100))
     }),
   ).toBe(true)
   await close.click()
+  const closingDurations = await flap.evaluate((element) =>
+    element.getAnimations().map((animation) => {
+      const duration = animation.effect.getTiming().duration
+      animation.pause()
+      animation.currentTime = duration / 2
+      return duration
+    }),
+  )
+  expect(closingDurations).toEqual([1100])
+  await expect(flap).not.toHaveCSS('transform', 'none')
+  await expect(page.locator('#cocktail-pages')).toHaveAttribute('inert', '')
+  await flap.evaluate((element) =>
+    element.getAnimations().forEach((animation) => animation.finish()),
+  )
   await expect(flap).toHaveCSS('transform', 'none')
   await expect(cover).toBeFocused()
-  await expect(page.locator('.menu-index')).toBeHidden()
+  await expect(page.locator('.menu-pages > .menu-index')).toBeHidden()
   await expect(close).toBeHidden()
   await cover.click()
   await expect(close).toBeHidden()
@@ -242,12 +350,12 @@ test('menú móvil, teclado, fotos, movimiento reducido y accesibilidad', async 
   await expect(page.getByRole('button', { name: 'Cerrar carta' })).toBeVisible()
   await page.getByRole('button', { name: 'Página siguiente de la carta' }).focus()
   await page.keyboard.press('Enter')
-  await expect(page.locator('.menu-page-navigation')).toContainText('Página 2 de 4')
+  await expect(page.locator('.menu-pages .menu-page-navigation')).toContainText('Página 2 de 4')
   await page.getByRole('button', { name: 'Página anterior de la carta' }).click()
   await expect(page.getByRole('button', { name: 'Página anterior de la carta' })).toBeDisabled()
   await page.getByRole('button', { name: 'Frescos', exact: true }).focus()
   await page.keyboard.press('Enter')
-  await expect(page.locator('.drink-list > button')).toHaveCount(3)
+  await expect(page.locator('.menu-pages .drink-list > button')).toHaveCount(3)
   await expect(page.locator('#drink-detail h3')).toHaveText('Mojito')
   await page.getByRole('button', { name: 'Caipirinha Frescos' }).click()
   await expect(page.locator('#drink-detail h3')).toHaveText('Caipirinha')

@@ -22,6 +22,7 @@ import {
   PageHeading,
 } from '../components/ui.jsx'
 import ReservationList from '../components/ReservationList.jsx'
+import ReservationOptions from '../components/ReservationOptions.jsx'
 import { DeleteReservation, ReservationDetail } from '../components/ReservationDialogs.jsx'
 import { useReservas } from '../utils/applicationContext.js'
 import { ESTADOS, fechaLegible, fechaLocal, filtrarReservas, moneda } from '../utils/reservas.js'
@@ -126,6 +127,7 @@ export default function ReservasPage({ agenda = false }) {
         </Link>
       </PageHeading>
       {!agenda && <Summary reservas={reservas} unavailable={loading || Boolean(error)} />}
+      {!agenda && <ReservationOptions />}
       {agenda && (
         <div className="agenda-banner">
           <CalendarDays size={28} aria-hidden="true" />

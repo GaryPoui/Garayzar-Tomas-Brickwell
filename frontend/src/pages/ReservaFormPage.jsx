@@ -12,6 +12,7 @@ import {
 import { useNotification, useReservas } from '../utils/applicationContext.js'
 import { crearReserva, modificarReserva, obtenerReserva } from '../services/reservaService.js'
 import barPhoto from '../assets/nightlife/club.jpg'
+import MesaReservaForm from '../components/MesaReservaForm.jsx'
 import {
   ESTADOS,
   fechaLegible,
@@ -280,7 +281,7 @@ function ReservaFormPageContent({ id }) {
         description={
           id
             ? 'Actualizá los datos de la reserva.'
-            : 'Definí la fecha, las referencias y los importes para registrar la reserva.'
+            : 'Elegí tu mesa, encontrá tu sector y sumá los combos para tu noche.'
         }
       />
       {loading ? (
@@ -298,8 +299,10 @@ function ReservaFormPageContent({ id }) {
             Reintentar
           </Button>
         </EmptyState>
+      ) : !original || original.mesa ? (
+        <MesaReservaForm key={id || 'nueva'} original={original} />
       ) : (
-        <ReservaForm key={id || 'nueva'} original={original} />
+        <ReservaForm key={id} original={original} />
       )}
     </>
   )

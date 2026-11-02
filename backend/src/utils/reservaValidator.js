@@ -1,5 +1,6 @@
 import { BadRequestError } from "../exceptions/AppError.js";
 import { Messages } from "../enums/Messages.js";
+import { validarFechaCatalogo } from "../services/CatalogoService.js";
 
 const camposObligatorios = [
     "fecha",
@@ -8,7 +9,7 @@ const camposObligatorios = [
     "sector",
     "paquete",
     "precioTotal",
-    "anticipo"
+    "anticipo",
 ];
 
 export const validarCamposReserva = (datos) => {
@@ -25,16 +26,31 @@ export const validarCamposReserva = (datos) => {
     const anticipo = Number(datos.anticipo);
 
     if (
-        Number.isNaN(precioTotal) ||
-        Number.isNaN(anticipo) ||
+        !Number.isFinite(precioTotal) ||
+        !Number.isFinite(anticipo) ||
         precioTotal < 0 ||
-        anticipo < 0
+        anticipo < 0 ||
+        anticipo > precioTotal
     ) {
         throw new BadRequestError(Messages.INVALID_PRICE);
+    }
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(datos.horario)) {
+        throw new BadRequestError("Ingresá un horario válido.");
+    }
+    for (const campo of ["cliente", "sector", "paquete"]) {
+        if (
+            !Number.isSafeInteger(Number(datos[campo])) ||
+            Number(datos[campo]) < 1
+        ) {
+            throw new BadRequestError(
+                "Los identificadores deben ser enteros mayores que cero.",
+            );
+        }
     }
 };
 
 export const validarFechaReserva = (fecha) => {
+    validarFechaCatalogo(fecha);
     const fechaReserva = new Date(`${fecha}T00:00:00`);
 
     if (Number.isNaN(fechaReserva.getTime())) {

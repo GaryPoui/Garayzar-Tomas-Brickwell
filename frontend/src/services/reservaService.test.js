@@ -1,5 +1,6 @@
 import { test, afterEach, mock } from 'node:test'
 import assert from 'node:assert/strict'
+import { obtenerCatalogo } from './catalogoService.js'
 import {
   obtenerReservas,
   obtenerReserva,
@@ -9,6 +10,25 @@ import {
 } from './reservaService.js'
 
 afterEach(() => mock.restoreAll())
+
+test('consulta catálogo con fecha y exclusión, y conserva conflictos HTTP', async () => {
+  const fetchMock = mock.method(globalThis, 'fetch', async () => ({
+    ok: true,
+    json: async () => ({ success: true, data: { mesas: [] } }),
+  }))
+  assert.deepEqual(await obtenerCatalogo({ fecha: '2099-12-01', excluir: 7 }), { mesas: [] })
+  assert.equal(fetchMock.mock.calls[0].arguments[0], '/api/catalogo?fecha=2099-12-01&excluir=7')
+  mock.restoreAll()
+  mock.method(globalThis, 'fetch', async () => ({
+    ok: false,
+    status: 409,
+    json: async () => ({ success: false, message: 'Esa mesa ya está reservada.' }),
+  }))
+  await assert.rejects(crearReserva({ mesa: 1 }), {
+    status: 409,
+    message: 'Esa mesa ya está reservada.',
+  })
+})
 
 test('procesa data y centraliza las cinco operaciones HTTP', async () => {
   const fetchMock = mock.method(globalThis, 'fetch', async () => ({

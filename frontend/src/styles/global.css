@@ -1,5 +1,6 @@
 @import './layout.css';
 @import './reservas.css';
+@import './booking.css';
 
 :root {
   font-family: 'Manrope', sans-serif;

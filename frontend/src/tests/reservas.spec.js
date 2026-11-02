@@ -48,17 +48,22 @@ test('CRUD real, validaciones, filtros, agenda y confirmación accesible', async
   await expect(page.getByText('Todavía no hay reservas registradas.')).toBeVisible()
   await page.getByRole('link', { name: 'Crear primera reserva' }).click()
   await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
-  await expect(page.locator('[aria-invalid="true"]')).toHaveCount(7)
-  await expect(page.locator('#fecha')).toBeFocused()
+  await expect(page.locator('[aria-invalid="true"]')).toHaveCount(2)
+  await expect(page.locator('#cliente')).toBeFocused()
   await expect(page.getByRole('alert')).toContainText('Revisá los campos')
-  for (const [name, value] of Object.entries(reservaValida()))
-    await page.locator(`#${name}`).fill(String(value))
-  await expect(page.locator('.summary-references dd')).toHaveText(['#1', '#2', '#1'])
+  for (const name of ['fecha', 'horario', 'cliente', 'anticipo'])
+    await page.locator(`#${name}`).fill(String(reservaValida()[name]))
+  await page.getByRole('button', { name: /^Mesa P1,/ }).click()
+  await expect(page.locator('.summary-references dd')).toHaveText([
+    '#1',
+    'Pista',
+    'P1 · Zona central',
+  ])
   await expect(page.locator('.summary-visual img')).toBeVisible()
   await expect
     .poll(() => page.locator('.summary-visual img').evaluate((image) => image.naturalWidth))
     .toBeGreaterThan(0)
-  await expect(page.locator('.summary-balance')).toContainText('35.000,00')
+  await expect(page.locator('.summary-balance')).toContainText('30.000,00')
   await page.locator('#anticipo').fill('60000')
   await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
   await expect(page.locator('#anticipo-error')).toContainText('no puede superar')
@@ -71,7 +76,7 @@ test('CRUD real, validaciones, filtros, agenda y confirmación accesible', async
   await expect(page.getByText(`La reserva #${id} se creó correctamente.`)).toBeVisible()
   await expect(page.locator('.notification')).toHaveCSS('background-color', 'rgb(20, 20, 22)')
   await page.getByRole('button', { name: `Ver reserva #${id}`, exact: true }).click()
-  await expect(page.getByRole('dialog')).toContainText('35.000,00')
+  await expect(page.getByRole('dialog')).toContainText('30.000,00')
   await expect(page.getByRole('dialog')).toHaveCSS('background-color', 'rgb(20, 20, 22)')
   await checkAccessibility(page)
   await page.keyboard.press('Escape')
@@ -183,7 +188,7 @@ test('paginación, filtros y disposición sin desbordes en móvil y escritorio',
     await page.screenshot({ path: testInfo.outputPath(`agenda-${width}.png`), fullPage: true })
     await page.getByRole('link', { name: 'Nueva reserva', exact: true }).first().click()
     await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
-    await expect(page.locator('[aria-invalid="true"]')).toHaveCount(7)
+    await expect(page.locator('[aria-invalid="true"]')).toHaveCount(2)
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBeTruthy()
@@ -237,4 +242,95 @@ test('cambiar de reserva por el historial recarga el formulario correcto', async
   await page.goBack()
   await page.goBack()
   await expect(page.locator('#cliente')).toHaveValue('11')
+})
+
+test('mesas, mapa, combos anticipados, edición y disponibilidad real', async ({
+  page,
+  request,
+}, testInfo) => {
+  await page.goto('#/reservas')
+  await expect(page.locator('.sector-offer')).toHaveCount(3)
+  await page.getByRole('link', { name: 'Elegir Frente al escenario' }).click()
+  await expect(page.locator('.venue-stage')).toHaveText('ESCENARIO')
+  await page.locator('#cliente').fill('7')
+  await page.locator('#personas').fill('4')
+  await page.getByRole('button', { name: /^Mesa V1,/ }).click()
+  await page.getByRole('button', { name: 'Agregar Smirnoff + Speed' }).click()
+  await page.getByRole('button', { name: 'Agregar Smirnoff + Speed' }).click()
+  await page.getByRole('button', { name: 'Agregar Gin + tónicas' }).click()
+  await expect(page.locator('#precioTotal')).toHaveValue(/201\.000,00/)
+  await expect(page.locator('.summary-references')).toContainText('Primera fila')
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 1000 })
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true)
+    await page.locator('.venue-plan').scrollIntoViewIfNeeded()
+    await page.screenshot({ path: testInfo.outputPath(`mapa-${width}.png`), fullPage: true })
+  }
+  await checkAccessibility(page)
+  await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
+  await expect(page.locator('.reservation-row')).toContainText('Frente al escenario · V1')
+  const { data } = await (await request.get('/api/reservas')).json()
+  expect(data[0].precioTotal).toBe(201000)
+  expect(data[0].combos).toHaveLength(2)
+  const id = data[0].id
+  await page.getByRole('button', { name: `Ver reserva #${id}`, exact: true }).click()
+  await expect(page.getByRole('dialog')).toContainText('2 × Smirnoff + Speed')
+  await expect(page.getByRole('dialog')).toContainText('1 × Gin + tónicas')
+  await page.keyboard.press('Escape')
+  await page.getByRole('link', { name: `Editar reserva #${id}`, exact: true }).click()
+  await expect(page.getByRole('button', { name: /^Mesa V1,/ })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await page.getByRole('button', { name: 'Quitar Gin + tónicas' }).click()
+  await page.getByRole('button', { name: 'Guardar cambios' }).click()
+  await expect(page.locator('.reservation-row')).toContainText('156.000,00')
+  await page.getByRole('link', { name: 'Nueva reserva', exact: true }).first().click()
+  await expect(page.getByRole('button', { name: /^Mesa V1,/ })).toBeDisabled()
+  await page.locator('#personas').fill('5')
+  await expect(page.getByRole('button', { name: /^Mesa B1,/ })).toBeDisabled()
+  const next = new Date(`${fechaMinima()}T12:00:00`)
+  next.setDate(next.getDate() + 1)
+  const fecha = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`
+  await page.locator('#fecha').fill(fecha)
+  await expect(page.getByRole('button', { name: /^Mesa V1,/ })).toBeEnabled()
+})
+
+test('catálogo fallido y mesa ocupada durante el envío: error y recuperación', async ({
+  page,
+  request,
+}) => {
+  await page.route('**/api/catalogo?*', (route) =>
+    route.fulfill({
+      status: 503,
+      json: { success: false, message: 'No se pudo consultar el catálogo.' },
+    }),
+  )
+  await page.goto('#/reservas/nueva')
+  await expect(page.getByRole('alert')).toContainText('No se pudo consultar el catálogo.')
+  await expect(page.getByRole('button', { name: 'Crear reserva', exact: true })).toBeDisabled()
+  await page.unroute('**/api/catalogo?*')
+  await page.getByRole('button', { name: 'Reintentar catálogo' }).click()
+  await page.locator('#cliente').fill('8')
+  await page.getByRole('button', { name: /^Mesa V2,/ }).click()
+  const competing = await request.post('/api/reservas', {
+    data: {
+      fecha: fechaMinima(),
+      horario: '23:30',
+      cliente: 9,
+      mesa: 2,
+      personas: 2,
+      anticipo: 0,
+      combos: [],
+    },
+  })
+  expect(competing.status()).toBe(201)
+  await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
+  await expect(page.getByRole('alert').filter({ hasText: 'ya está reservada' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Mesa V2,/ })).toBeDisabled()
+  await page.getByRole('button', { name: /^Mesa V3,/ }).click()
+  await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
+  await expect(page.locator('.reservation-row')).toHaveCount(2)
 })

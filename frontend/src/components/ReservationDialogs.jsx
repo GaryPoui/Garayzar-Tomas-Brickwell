@@ -63,11 +63,15 @@ export function ReservationDetail({ id, onClose }) {
             </div>
             <div>
               <dt>Sector</dt>
-              <dd>{referencia(reserva.sector)}</dd>
+              <dd>{reserva.detalleMesa?.sectorNombre || referencia(reserva.sector)}</dd>
             </div>
             <div>
-              <dt>Paquete</dt>
-              <dd>{referencia(reserva.paquete)}</dd>
+              <dt>{reserva.detalleMesa ? 'Mesa y personas' : 'Paquete'}</dt>
+              <dd>
+                {reserva.detalleMesa
+                  ? `${reserva.detalleMesa.nombre} · ${reserva.personas} personas · ${reserva.detalleMesa.cercania}`
+                  : referencia(reserva.paquete)}
+              </dd>
             </div>
             <div>
               <dt>Precio total</dt>
@@ -82,6 +86,24 @@ export function ReservationDetail({ id, onClose }) {
               <dd>{moneda(reserva.precioTotal - reserva.anticipo)}</dd>
             </div>
           </dl>
+          {reserva.mesa && (
+            <section className="reservation-detail-combos" aria-label="Combos anticipados">
+              <h3>Combos anticipados</h3>
+              {reserva.combos.length ? (
+                reserva.combos.map((item) => (
+                  <p key={item.id}>
+                    <span>
+                      {item.cantidad} × {item.nombre}
+                    </span>
+                    <strong>{moneda(item.subtotal)}</strong>
+                  </p>
+                ))
+              ) : (
+                <p>Sin combos agregados</p>
+              )}
+              <p>Pago a coordinar con el local. No se realizó un cobro en línea.</p>
+            </section>
+          )}
           <footer className="modal-actions">
             <Button variant="secondary" onClick={onClose}>
               Cerrar
