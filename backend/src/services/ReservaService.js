@@ -3,7 +3,11 @@ import Reserva from "../models/Reserva.js";
 import { prepararMesa } from "./CatalogoService.js";
 import { Messages } from "../enums/Messages.js";
 import { EstadosReserva } from "../enums/EstadoReserva.js";
-import { BadRequestError, NotFoundError } from "../exceptions/AppError.js";
+import {
+    BadRequestError,
+    ConflictError,
+    NotFoundError,
+} from "../exceptions/AppError.js";
 import {
     validarCamposReserva,
     validarFechaReserva,
@@ -109,6 +113,29 @@ class ReservaService {
     eliminar(id) {
         this.obtenerPorId(id);
         return ReservaRepository.delete(id);
+    }
+
+    cancelarPropia(id, cliente) {
+        const reserva = this.obtenerPropia(id, cliente);
+        if (! [EstadosReserva.PENDIENTE, EstadosReserva.CONFIRMADA].includes(reserva.estado)) {
+            throw new ConflictError(
+                "Solo podés cancelar reservas pendientes o confirmadas.",
+            );
+        }
+
+        const manana = new Date();
+        manana.setHours(0, 0, 0, 0);
+        manana.setDate(manana.getDate() + 1);
+        const fechaMinima = `${manana.getFullYear()}-${String(manana.getMonth() + 1).padStart(2, "0")}-${String(manana.getDate()).padStart(2, "0")}`;
+        if (reserva.fecha < fechaMinima) {
+            throw new ConflictError(
+                "Las reservas solo se pueden cancelar antes del día reservado.",
+            );
+        }
+
+        return ReservaRepository.update(id, {
+            estado: EstadosReserva.CANCELADA,
+        });
     }
 }
 

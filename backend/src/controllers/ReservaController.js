@@ -47,8 +47,10 @@ class ReservaController {
 
     eliminar(req, res, next) {
         try {
-            const reservaEliminada = ReservaService.eliminar(req.params.id);
-            return ApiResponse.success(res, reservaEliminada, 200);
+            const resultado = isStaff(req.user)
+                ? ReservaService.eliminar(req.params.id)
+                : ReservaService.cancelarPropia(req.params.id, req.user.id);
+            return ApiResponse.success(res, resultado, 200);
         } catch (error) {
             next(error);
         }

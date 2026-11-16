@@ -1,5 +1,27 @@
 # Memoria de Codex — Brickell’s
 
+## Actualización del 16/11/2026
+
+Esta sección prevalece sobre las notas históricas inferiores cuando haya diferencias.
+
+### Trabajo realizado
+
+- Se inició la revisión de la consigna de integración completa, excluyendo el video. Ya existen autenticación, roles, catálogo y reservas con disponibilidad; no volver a implementarlos ni reemplazar el diseño existente.
+- Se completó la cancelación propia en el backend: `DELETE /api/reservas/:id` requiere sesión y, para clientes, delega en `ReservaService.cancelarPropia`. Solo el titular puede cancelar una reserva pendiente o confirmada cuya fecha sea posterior al día actual.
+- La cancelación conserva el registro con estado `CANCELADA` y libera la disponibilidad de la mesa. Una reserva ajena responde 404; un estado o una fecha que impiden cancelar responden 409 mediante el manejo centralizado de errores.
+- Para el personal, el mismo endpoint conserva el borrado físico anterior. La modificación mediante `PUT` sigue restringida al personal. Se mantuvo la separación entre rutas, controlador, servicio y repositorio.
+- Se agregó cobertura HTTP en `backend/test/auth.test.js` para titularidad, cancelación, rechazo de una segunda cancelación, conservación del registro y disponibilidad liberada. Se actualizó la expectativa anterior que prohibía cualquier DELETE de un cliente.
+- El usuario pidió detener las pruebas y publicar el trabajo. No ejecutar más pruebas en este cierre ni afirmar que se verificó toda la consigna o el recorrido completo desde React.
+
+### Pendientes para continuar
+
+- Conectar la cancelación propia desde la agenda/listado del cliente, respetando los componentes y estilos existentes: acción de cancelar, confirmación, bloqueo durante el envío, mensajes de éxito/error y actualización del listado/disponibilidad desde la API. Hoy la nueva operación solo está disponible en backend.
+- Mantener las peticiones HTTP centralizadas en `frontend/src/services`; comprobar cómo el servicio y el estado compartido existentes procesan el DELETE antes de reutilizarlos para la cancelación, ya que el registro cancelado no se elimina.
+- Actualizar la documentación funcional/API para distinguir cancelación de cliente y eliminación del personal.
+- Completar la revisión de las partes 1 a 4 de la consigna y documentar otros faltantes solo si se confirman. No se terminó una auditoría integral ni debe darse la entrega por completa.
+- Cuando el usuario autorice retomar las comprobaciones, verificar el flujo de cliente desde React y los casos límite de fecha/estado, además de las comprobaciones necesarias del proyecto. El video queda expresamente fuera del alcance.
+- El almacenamiento sigue siendo volátil: reiniciar el backend elimina los datos. No afirmar persistencia durable ni pagos reales. Un push al repositorio no acredita un despliegue verificado.
+
 ## Ampliación del 02/11/2026
 
 - Actualización posterior: API desplegada en Render gratuito, `https://brickwell-api.onrender.com`; carpeta `backend`, Node 22, `npm ci`, `npm start`. GitHub `VITE_API_URL=https://brickwell-api.onrender.com/api`. CORS comprobado desde Pages. Mantiene memoria volátil y sin pagos ni autenticación: publicación de demostración.

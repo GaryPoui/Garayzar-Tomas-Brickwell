@@ -49,8 +49,8 @@ test("sesiones y reservas privadas por usuario", async () => {
         assert.equal((await send(path, "GET", undefined, second.data.token)).status, 404);
         for (const clientToken of [token, second.data.token]) {
             assert.equal((await send(path, "PUT", { estado: "CONFIRMADA" }, clientToken)).status, 403);
-            assert.equal((await send(path, "DELETE", undefined, clientToken)).status, 403);
         }
+        assert.equal((await send(path, "DELETE", undefined, second.data.token)).status, 404);
         for (const staffToken of [admin.data.token, reception.data.token]) {
             assert.equal((await send("/reservas", "GET", undefined, staffToken)).data.length, 1);
             assert.equal((await send(path, "GET", undefined, staffToken)).status, 200);
@@ -65,6 +65,80 @@ test("sesiones y reservas privadas por usuario", async () => {
         assert.equal((await send("/reservas", "GET", undefined, token)).status, 401);
         assert.equal((await send("/auth/sesion", "GET", undefined, "0".repeat(64))).status, 401);
     } finally {
+        await new Promise((resolve) => server.close(resolve));
+    }
+});
+
+test("cliente cancela solo su reserva futura y la mesa queda disponible", async () => {
+    const server = app.listen(0, "127.0.0.1");
+    await new Promise((resolve) => server.once("listening", resolve));
+    const base = `http://127.0.0.1:${server.address().port}/api`;
+    const send = async (path, method = "GET", body, token) => {
+        const response = await fetch(`${base}${path}`, {
+            method,
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: body === undefined ? undefined : JSON.stringify(body),
+        });
+        return { status: response.status, ...(await response.json()) };
+    };
+    let reservaId;
+    try {
+        const owner = await send("/auth/registro", "POST", {
+            nombre: "Cliente titular",
+            email: "cancelar-titular@example.com",
+            password: "Una-clave-segura-123",
+        });
+        const another = await send("/auth/registro", "POST", {
+            nombre: "Otro cliente",
+            email: "cancelar-ajeno@example.com",
+            password: "Otra-clave-segura-123",
+        });
+        const reservation = await send(
+            "/reservas",
+            "POST",
+            {
+                fecha: "2099-12-10",
+                horario: "23:30",
+                mesa: 1,
+                personas: 2,
+                anticipo: 0,
+                combos: [],
+            },
+            owner.data.token,
+        );
+        reservaId = reservation.data.id;
+
+        assert.equal(reservation.status, 201);
+        assert.equal(
+            (await send(`/reservas/${reservaId}`, "DELETE", undefined, another.data.token)).status,
+            404,
+        );
+        const cancelled = await send(
+            `/reservas/${reservaId}`,
+            "DELETE",
+            undefined,
+            owner.data.token,
+        );
+        assert.equal(cancelled.status, 200);
+        assert.equal(cancelled.data.estado, "CANCELADA");
+        assert.equal(
+            (await send(`/reservas/${reservaId}`, "DELETE", undefined, owner.data.token)).status,
+            409,
+        );
+        const catalog = await send("/catalogo?fecha=2099-12-10");
+        assert.equal(catalog.data.mesas[0].disponible, true);
+        assert.equal((await send(`/reservas/${reservaId}`, "GET", undefined, owner.data.token)).data.estado, "CANCELADA");
+    } finally {
+        if (reservaId) {
+            const admin = await send("/auth/login", "POST", {
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD,
+            });
+            await send(`/reservas/${reservaId}`, "DELETE", undefined, admin.data.token);
+        }
         await new Promise((resolve) => server.close(resolve));
     }
 });
