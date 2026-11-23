@@ -100,7 +100,9 @@ Las E2E inician una API aislada en 3101 y Vite en 5175. Funcionan en Windows y L
 
 Frontend existente: <https://garypoui.github.io/Garayzar-Tomas-Brickwell/>. API configurada históricamente: <https://brickwell-api.onrender.com/api/catalogo>.
 
-Los cambios locales deben publicarse para aparecer en esas URLs. GitHub Pages requiere `VITE_API_URL` con la URL de la API y CORS debe permitir el origen del frontend. `render.yaml` conserva la configuración del servicio gratuito existente.
+Publicación verificada el 23/11/2026: GitHub Pages completó el despliegue `45267324964` y Render respondió con la revisión `97600c4` y `storage: "postgres"`. Se comprobaron registro, login, datos inválidos, email duplicado, permisos, creación de reserva, rechazo de duplicado, cancelación, liberación de mesa y revocación de sesión en la API pública.
+
+GitHub Pages mantiene `VITE_API_URL` apuntando a Render; la conexión privada de Supabase está guardada únicamente en el entorno del backend. Se conserva el servicio gratuito existente.
 
 `render.yaml` mantiene **plan free** y declara `DATABASE_URL` como secreto (`sync: false`): se carga en Environment del servicio de Render, nunca en GitHub Pages ni en variables `VITE_*`. El certificado público de Supabase está incluido en `backend/certs`; la conexión valida el certificado y el nombre del servidor. El healthcheck `/` informa `storage: "postgres"` cuando se utiliza la base alojada.
 

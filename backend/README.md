@@ -145,3 +145,5 @@ npm run test:cloud
 Prueba optativa con `DATABASE_URL` en `.env`, dirigida a una base de pruebas. Verifica el contrato HTTP, datos y sesiones desde nuevos procesos, conflicto de reservas entre dos procesos, cupo de evento, rollback y logout persistente. Sus registros usan UUID y se eliminan al terminar. La suite habitual `npm test` siempre fuerza SQLite aislado y nunca usa la conexión remota del entorno.
 
 El endpoint `/` devuelve `storage: "postgres"` o `"sqlite"` además de la revisión del despliegue. No publica contraseñas ni la URL de conexión.
+
+La instancia `https://brickwell-api.onrender.com` quedó conectada a Supabase el 23/11/2026. La prueba HTTP pública verificó registro y login, validaciones, duplicados, permisos, reserva con precio del servidor, cancelación, disponibilidad y logout. El acceso inicial de administración usa una contraseña privada; el archivo local `backend/data/acceso-produccion.txt` está excluido de Git. Las cuentas de demo siguen siendo exclusivamente locales.
