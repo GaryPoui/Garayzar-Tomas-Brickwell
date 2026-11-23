@@ -23,6 +23,11 @@
   border-top: 3px solid var(--zone-color);
   padding: 22px 0 12px;
 }
+.sector-offer,
+.sector-choice,
+.venue-zone {
+  --zone-color: #d3efb1;
+}
 .venue-zone-1 {
   --zone-color: #e7c68b;
 }

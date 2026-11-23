@@ -159,6 +159,9 @@ export default function HomePage() {
               {id === 'reservar' && <ArrowUpRight size={17} aria-hidden="true" />}
             </Link>
           ))}
+          <Link to="/eventos" onClick={() => setMenuOpen(false)}>
+            Eventos
+          </Link>
           <Link to={user ? home : '/login'} onClick={() => setMenuOpen(false)}>
             {user ? 'Mi cuenta' : 'Iniciar sesión'}
           </Link>

@@ -10,11 +10,14 @@ import { ESTADOS, fechaLegible, fechaMinima, moneda, validarReserva } from '../u
 import barPhoto from '../assets/nightlife/club.jpg'
 import whiskyPhoto from '../assets/nightlife/bar-cocktails.jpg'
 import citrusPhoto from '../assets/nightlife/citrus.jpg'
+import useRemote from '../utils/useRemote.js'
+import { reservaTransitions } from '../utils/negocio.js'
 
 const photos = { bar: barPhoto, whisky: whiskyPhoto, citrus: citrusPhoto }
 
 export default function MesaReservaForm({ original }) {
-  const { user, home } = useAuth()
+  const { user, home, staff } = useAuth()
+  const clientes = useRemote(staff && !original ? '/clientes' : null)
   const [params] = useSearchParams()
   const [values, setValues] = useState(() => ({
     fecha: original?.fecha || fechaMinima(),
@@ -23,6 +26,9 @@ export default function MesaReservaForm({ original }) {
     mesa: original?.mesa || '',
     anticipo: original?.anticipo || 0,
     estado: original?.estado || 'PENDIENTE',
+    cliente: original?.cliente || '',
+    descuento: original?.descuento || 0,
+    notas: original?.notas || '',
   }))
   const [quantities, setQuantities] = useState(() =>
     Object.fromEntries((original?.combos || []).map((item) => [item.id, item.cantidad])),
@@ -42,7 +48,18 @@ export default function MesaReservaForm({ original }) {
     (total, item) => total + item.precio * (Number(quantities[item.id]) || 0),
     0,
   )
-  const total = (mesa?.precio || 0) + combosTotal
+  const selectionChanged =
+    original &&
+    (Number(values.mesa) !== original.mesa ||
+      JSON.stringify(
+        combos
+          .filter((item) => Number(quantities[item.id]) > 0)
+          .map((item) => ({ id: item.id, cantidad: Number(quantities[item.id]) })),
+      ) !==
+        JSON.stringify(original.combos.map((item) => ({ id: item.id, cantidad: item.cantidad }))))
+  const base =
+    original && !selectionChanged ? original.precioBase : (mesa?.precio || 0) + combosTotal
+  const total = Math.round(base * (1 - Number(values.descuento) / 100) * 100) / 100
 
   function change(event) {
     const { name, value } = event.target
@@ -76,9 +93,21 @@ export default function MesaReservaForm({ original }) {
     event.preventDefault()
     if (busy) return
     const failures = validarReserva(
-      { ...values, cliente: user.id, sector: mesa?.sector || 1, paquete: 1, precioTotal: total },
+      {
+        ...values,
+        cliente: staff ? values.cliente : user.id,
+        sector: mesa?.sector || 1,
+        paquete: 1,
+        precioTotal: total,
+      },
       original,
     )
+    if (
+      !Number.isFinite(Number(values.descuento)) ||
+      Number(values.descuento) < 0 ||
+      Number(values.descuento) > 100
+    )
+      failures.descuento = 'Ingresá un descuento de 0 a 100%.'
     if (
       !mesa ||
       (['PENDIENTE', 'CONFIRMADA', 'ACTIVA'].includes(values.estado) && !mesa.disponible)
@@ -115,11 +144,19 @@ export default function MesaReservaForm({ original }) {
         personas: Number(values.personas),
         mesa: mesa.id,
         anticipo: Number(values.anticipo),
+        descuento: Number(values.descuento),
+        ...(staff && !original ? { cliente: Number(values.cliente) } : {}),
         combos: combos
           .filter((item) => Number(quantities[item.id]) > 0)
           .map((item) => ({ id: item.id, cantidad: Number(quantities[item.id]) })),
       }
       if (!original) delete data.estado
+      if (!staff) {
+        delete data.cliente
+        delete data.anticipo
+        delete data.descuento
+        delete data.notas
+      }
       if (original?.fecha === data.fecha) delete data.fecha
       const saved = original ? await modificarReserva(original.id, data) : await crearReserva(data)
       notify(`La reserva #${saved.id} se ${original ? 'actualizó' : 'creó'} correctamente.`)
@@ -152,6 +189,38 @@ export default function MesaReservaForm({ original }) {
             Tu noche
           </legend>
           <div className="form-grid">
+            {staff && !original && (
+              <div>
+                <Field
+                  id="cliente"
+                  name="cliente"
+                  label="Cliente"
+                  value={values.cliente}
+                  onChange={change}
+                  error={errors.cliente}
+                  required
+                  disabled={clientes.loading || Boolean(clientes.error)}
+                >
+                  <option value="">Seleccioná un cliente</option>
+                  {(clientes.data || []).map((cliente) => (
+                    <option key={cliente.id} value={cliente.id}>
+                      {cliente.nombre} · {cliente.email}
+                    </option>
+                  ))}
+                </Field>
+                {clientes.error && (
+                  <p role="alert">
+                    {clientes.error} <Button onClick={clientes.refresh}>Reintentar clientes</Button>
+                  </p>
+                )}
+                {clientes.data?.length === 0 && (
+                  <p>
+                    No hay clientes registrados. El cliente debe crear su cuenta antes de que
+                    registres una reserva a su nombre.
+                  </p>
+                )}
+              </div>
+            )}
             <Field
               {...input('fecha')}
               label="Fecha"
@@ -161,15 +230,27 @@ export default function MesaReservaForm({ original }) {
               }
             />
             <Field {...input('horario')} label="Horario" type="time" />
-            <Field {...input('personas')} label="Personas" type="number" min="1" max="6" step="1" />
+            <Field
+              {...input('personas')}
+              label="Personas"
+              type="number"
+              min="1"
+              max="20"
+              step="1"
+            />
           </div>
           {original && (
             <Field {...input('estado')} label="Estado">
-              {Object.entries(ESTADOS).map(([id, label]) => (
-                <option key={id} value={id}>
-                  {label}
-                </option>
-              ))}
+              {Object.entries(ESTADOS)
+                .filter(
+                  ([id]) =>
+                    id === original.estado || reservaTransitions[original.estado].includes(id),
+                )
+                .map(([id, label]) => (
+                  <option key={id} value={id}>
+                    {label}
+                  </option>
+                ))}
             </Field>
           )}
         </fieldset>
@@ -315,14 +396,37 @@ export default function MesaReservaForm({ original }) {
           </legend>
           <div className="form-grid">
             <Field id="precioTotal" label="Precio total (ARS)" value={moneda(total)} readOnly />
-            <Field
-              {...input('anticipo')}
-              label="Anticipo registrado (ARS)"
-              type="number"
-              min="0"
-              step="0.01"
-              hint="Solo importes ya recibidos por el local. No se cobra en línea."
-            />
+            {staff && (
+              <Field
+                {...input('anticipo')}
+                label="Anticipo registrado (ARS)"
+                type="number"
+                min="0"
+                step="0.01"
+                hint="Solo importes ya recibidos por el local. No se cobra en línea."
+              />
+            )}
+            {staff && (
+              <Field
+                {...input('descuento')}
+                label="Descuento (%)"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                hint="Beneficio aplicado por el personal autorizado."
+              />
+            )}
+            {staff && original && (
+              <Field
+                id="notas"
+                name="notas"
+                label="Notas internas"
+                value={values.notas}
+                onChange={change}
+                maxLength={1000}
+              />
+            )}
           </div>
         </fieldset>
       </div>
@@ -349,7 +453,10 @@ export default function MesaReservaForm({ original }) {
             <dd>
               {original && original.cliente !== user.id
                 ? `Cliente #${original.cliente}`
-                : user.nombre}
+                : staff && !original
+                  ? clientes.data?.find((item) => item.id === Number(values.cliente))?.nombre ||
+                    'Sin elegir'
+                  : user.nombre}
             </dd>
           </div>
           <div>

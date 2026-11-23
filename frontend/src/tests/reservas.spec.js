@@ -13,6 +13,18 @@ const test = base.extend({
     })
     expect(response.status()).toBe(200)
     const { data } = await response.json()
+    const customerResponse = await client.post('/api/gestion/usuarios', {
+      headers: { Authorization: `Bearer ${data.token}` },
+      data: {
+        nombre: 'Cliente de reserva',
+        email: `fixture-${Date.now()}-${Math.random()}@example.com`,
+        password: 'Testing-cliente-123',
+        fechaNacimiento: '2000-01-01',
+        telefono: '2262551234',
+        rol: 'CLIENTE',
+      },
+    })
+    expect(customerResponse.status()).toBe(201)
     await client.dispose()
     await provide(data)
   },
@@ -36,19 +48,35 @@ const test = base.extend({
 const reservaValida = () => ({
   fecha: fechaMinima(),
   horario: '23:30',
-  cliente: 1,
-  sector: 2,
-  paquete: 1,
-  precioTotal: 50000,
+  mesa: 1,
+  personas: 2,
+  combos: [],
   anticipo: 15000,
 })
-
+let nextMesa = 0
 async function createReserva(request, overrides = {}) {
-  const response = await request.post('/api/reservas', {
-    data: { ...reservaValida(), ...overrides },
+  const created = await request.post('/api/gestion/usuarios', {
+    data: {
+      nombre: 'Cliente de prueba',
+      email: `cliente-${Date.now()}-${Math.random()}@example.com`,
+      password: 'Testing-cliente-123',
+      fechaNacimiento: '2000-01-01',
+      telefono: '2262551234',
+      rol: 'CLIENTE',
+    },
   })
-  expect(response.ok()).toBeTruthy()
+  expect(created.status()).toBe(201)
+  const cliente = (await created.json()).data.id
+  const response = await request.post('/api/reservas', {
+    data: { ...reservaValida(), mesa: (nextMesa++ % 12) + 1, ...overrides, cliente },
+  })
+  expect(response.status()).toBe(201)
   return (await response.json()).data
+}
+async function selectCustomer(page) {
+  const option = page.locator('#cliente option').last()
+  await expect(option).toHaveAttribute('value', /[1-9]/)
+  await page.locator('#cliente').selectOption(await option.getAttribute('value'))
 }
 
 async function checkAccessibility(page) {
@@ -78,15 +106,16 @@ test('CRUD real, validaciones, filtros, agenda y confirmación accesible', async
   await expect(page.locator('.management-navigation')).toBeVisible()
   await expect(page.getByText('Todavía no hay reservas registradas.')).toBeVisible()
   await page.getByRole('link', { name: 'Crear primera reserva' }).click()
+  await selectCustomer(page)
   await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
   await expect(page.locator('[aria-invalid="true"]')).toHaveCount(1)
-  await expect(page.locator('#cliente')).toHaveCount(0)
+  await expect(page.locator('#cliente')).toHaveCount(1)
   await expect(page.getByRole('alert')).toContainText('Revisá los campos')
   for (const name of ['fecha', 'horario', 'anticipo'])
     await page.locator(`#${name}`).fill(String(reservaValida()[name]))
   await page.getByRole('button', { name: /^Mesa P1,/ }).click()
   await expect(page.locator('.summary-references dd')).toHaveText([
-    'Administración',
+    'Cliente de reserva',
     'Pista',
     'P1 · Zona central',
   ])
@@ -96,10 +125,12 @@ test('CRUD real, validaciones, filtros, agenda y confirmación accesible', async
     .toBeGreaterThan(0)
   await expect(page.locator('.summary-balance')).toContainText('30.000,00')
   await page.locator('#anticipo').fill('60000')
+  await selectCustomer(page)
   await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
   await expect(page.locator('#anticipo-error')).toContainText('no puede superar')
   await page.locator('#anticipo').fill('15000')
   await page.getByRole('button', { name: 'Cerrar notificación' }).click()
+  await selectCustomer(page)
   await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
   await expect(page.locator('.reservation-row')).toHaveCount(1)
   const { data } = await (await request.get('/api/reservas')).json()
@@ -184,7 +215,7 @@ test('paginación, filtros y disposición sin desbordes en móvil y escritorio',
   page,
   request,
 }, testInfo) => {
-  const states = ['PENDIENTE', 'CONFIRMADA', 'ACTIVA', 'FINALIZADA', 'CANCELADA']
+  const states = ['PENDIENTE', 'CONFIRMADA']
   for (let index = 1; index <= 9; index++) {
     const reserva = await createReserva(request, { cliente: index })
     const response = await request.put(`/api/reservas/${reserva.id}`, {
@@ -218,6 +249,7 @@ test('paginación, filtros y disposición sin desbordes en móvil y escritorio',
     await page.evaluate(() => window.scrollTo(0, 0))
     await page.screenshot({ path: testInfo.outputPath(`agenda-${width}.png`), fullPage: true })
     await page.getByRole('link', { name: 'Nueva reserva', exact: true }).first().click()
+    await selectCustomer(page)
     await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
     await expect(page.locator('[aria-invalid="true"]')).toHaveCount(1)
     expect(
@@ -255,6 +287,7 @@ test('accesibilidad del listado vacío y formulario con errores', async ({ page 
     await page.screenshot({ path: testInfo.outputPath(`vacio-${width}.png`), fullPage: true })
   }
   await page.getByRole('link', { name: 'Crear primera reserva' }).click()
+  await selectCustomer(page)
   await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
   await checkAccessibility(page)
 })
@@ -263,8 +296,8 @@ test('cambiar de reserva por el historial recarga el formulario correcto', async
   page,
   request,
 }) => {
-  const first = await createReserva(request, { horario: '22:00' })
-  const second = await createReserva(request, { horario: '23:00' })
+  const first = await createReserva(request, { horario: '22:00', mesa: 1 })
+  const second = await createReserva(request, { horario: '23:00', mesa: 2 })
   await page.goto(`#/reservas/${first.id}/editar`)
   await expect(page.locator('#horario')).toHaveValue('22:00')
   await page.getByRole('link', { name: 'Volver a reservas' }).click()
@@ -283,7 +316,7 @@ test('mesas, mapa, combos anticipados, edición y disponibilidad real', async ({
   await expect(page.locator('.sector-offer')).toHaveCount(3)
   await page.getByRole('link', { name: 'Elegir Frente al escenario' }).click()
   await expect(page.locator('.venue-stage')).toHaveText('ESCENARIO')
-  await expect(page.locator('#cliente')).toHaveCount(0)
+  await expect(page.locator('#cliente')).toHaveCount(1)
   await page.locator('#personas').fill('4')
   await page.getByRole('button', { name: /^Mesa V1,/ }).click()
   await page.getByRole('button', { name: 'Agregar Smirnoff + Speed' }).click()
@@ -300,6 +333,7 @@ test('mesas, mapa, combos anticipados, edición y disponibilidad real', async ({
     await page.screenshot({ path: testInfo.outputPath(`mapa-${width}.png`), fullPage: true })
   }
   await checkAccessibility(page)
+  await selectCustomer(page)
   await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
   await expect(page.locator('.reservation-row')).toContainText('Frente al escenario · V1')
   const { data } = await (await request.get('/api/reservas')).json()
@@ -353,6 +387,7 @@ test('inicio móvil a 320 px: controles táctiles, resumen debajo y reserva comp
   await page.getByRole('button', { name: /^Mesa B1,/ }).click()
   await page.getByRole('button', { name: 'Agregar Gin + tónicas' }).click()
   await expect(page.locator('#precioTotal')).toHaveValue(/75\.000,00/)
+  await selectCustomer(page)
   await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
   await expect(page.locator('.reservation-row')).toContainText('Barra · B1')
   await checkAccessibility(page)
@@ -374,22 +409,13 @@ test('catálogo fallido y mesa ocupada durante el envío: error y recuperación'
   await page.unroute('**/api/catalogo?*')
   await page.getByRole('button', { name: 'Reintentar catálogo' }).click()
   await page.getByRole('button', { name: /^Mesa V2,/ }).click()
-  const competing = await request.post('/api/reservas', {
-    data: {
-      fecha: fechaMinima(),
-      horario: '23:30',
-      cliente: 9,
-      mesa: 2,
-      personas: 2,
-      anticipo: 0,
-      combos: [],
-    },
-  })
-  expect(competing.status()).toBe(201)
+  await createReserva(request, { mesa: 2, anticipo: 0 })
+  await selectCustomer(page)
   await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
   await expect(page.getByRole('alert').filter({ hasText: 'ya está reservada' })).toBeVisible()
   await expect(page.getByRole('button', { name: /^Mesa V2,/ })).toBeDisabled()
   await page.getByRole('button', { name: /^Mesa V3,/ }).click()
+  await selectCustomer(page)
   await page.getByRole('button', { name: 'Crear reserva', exact: true }).click()
   await expect(page.locator('.reservation-row')).toHaveCount(2)
 })

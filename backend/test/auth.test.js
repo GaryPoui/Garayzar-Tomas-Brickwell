@@ -1,144 +1,99 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
-process.env.ADMIN_EMAIL = "admin-auth@example.com";
-process.env.ADMIN_PASSWORD = "Admin-test-password-123";
-process.env.RECEPCION_EMAIL = "recepcion-auth@example.com";
-process.env.RECEPCION_PASSWORD = "Recepcion-test-password-123";
-const { default: app } = await import("../src/app.js");
-
-test("sesiones y reservas privadas por usuario", async () => {
-    const server = app.listen(0, "127.0.0.1");
-    await new Promise((resolve) => server.once("listening", resolve));
-    const base = `http://127.0.0.1:${server.address().port}/api`;
-    const send = async (path, method = "GET", body, token) => {
-        const response = await fetch(`${base}${path}`, {
-            method,
-            headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-            body: body === undefined ? undefined : JSON.stringify(body),
-        });
-        return { status: response.status, ...(await response.json()) };
-    };
-    try {
-        assert.equal((await send("/reservas")).status, 401);
-        assert.equal((await send("/reservas", "POST", {})).status, 401);
-        const account = { nombre: "Tomas", email: "tomas@example.com", password: "Una-clave-segura-123" };
-        assert.equal((await send("/auth/registro", "POST", { ...account, password: "corta" })).status, 400);
-        const first = await send("/auth/registro", "POST", { ...account, rol: "ADMIN" });
-        assert.equal(first.status, 201);
-        assert.deepEqual(Object.keys(first.data.user).sort(), ["email", "id", "nombre", "rol"]);
-        assert.equal(first.data.user.rol, "CLIENTE");
-        const admin = await send("/auth/login", "POST", { email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD });
-        assert.equal(admin.data.user.rol, "ADMIN");
-        const reception = await send("/auth/login", "POST", { email: process.env.RECEPCION_EMAIL, password: process.env.RECEPCION_PASSWORD });
-        assert.equal(reception.data.user.rol, "RECEPCIONISTA");
-        assert.equal((await send("/auth/registro", "POST", account)).status, 409);
-        assert.equal((await send("/auth/login", "POST", { ...account, password: "incorrecta" })).status, 401);
-        const logged = await send("/auth/login", "POST", { ...account, email: " TOMAS@EXAMPLE.COM " });
-        assert.equal(logged.status, 200);
-        const token = logged.data.token;
-        assert.equal((await send("/auth/sesion", "GET", undefined, token)).data.id, first.data.user.id);
-        const second = await send("/auth/registro", "POST", { ...account, email: "otra@example.com" });
-        const created = await send("/reservas", "POST", {
-            fecha: "2099-12-10", horario: "23:30", cliente: second.data.user.id,
-            mesa: 1, personas: 2, anticipo: 0, combos: [],
-        }, token);
-        assert.equal(created.status, 201);
-        assert.equal(created.data.cliente, first.data.user.id);
-        const path = `/reservas/${created.data.id}`;
-        assert.equal((await send("/reservas", "GET", undefined, second.data.token)).data.length, 0);
-        assert.equal((await send(path, "GET", undefined, second.data.token)).status, 404);
-        for (const clientToken of [token, second.data.token]) {
-            assert.equal((await send(path, "PUT", { estado: "CONFIRMADA" }, clientToken)).status, 403);
-        }
-        assert.equal((await send(path, "DELETE", undefined, second.data.token)).status, 404);
-        for (const staffToken of [admin.data.token, reception.data.token]) {
-            assert.equal((await send("/reservas", "GET", undefined, staffToken)).data.length, 1);
-            assert.equal((await send(path, "GET", undefined, staffToken)).status, 200);
-        }
-        const edited = await send(path, "PUT", { cliente: second.data.user.id, horario: "23:00", estado: "CONFIRMADA" }, admin.data.token);
-        assert.equal(edited.status, 200);
-        assert.equal(edited.data.cliente, first.data.user.id);
-        assert.equal(edited.data.estado, "CONFIRMADA");
-        assert.equal((await send(path, "PUT", { horario: "22:00" }, reception.data.token)).status, 200);
-        assert.equal((await send(path, "DELETE", undefined, admin.data.token)).status, 200);
-        assert.equal((await send("/auth/logout", "POST", {}, token)).status, 200);
-        assert.equal((await send("/reservas", "GET", undefined, token)).status, 401);
-        assert.equal((await send("/auth/sesion", "GET", undefined, "0".repeat(64))).status, 401);
-    } finally {
-        await new Promise((resolve) => server.close(resolve));
-    }
-});
-
-test("cliente cancela solo su reserva futura y la mesa queda disponible", async () => {
-    const server = app.listen(0, "127.0.0.1");
-    await new Promise((resolve) => server.once("listening", resolve));
-    const base = `http://127.0.0.1:${server.address().port}/api`;
-    const send = async (path, method = "GET", body, token) => {
-        const response = await fetch(`${base}${path}`, {
-            method,
-            headers: {
-                "Content-Type": "application/json",
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            body: body === undefined ? undefined : JSON.stringify(body),
-        });
-        return { status: response.status, ...(await response.json()) };
-    };
-    let reservaId;
-    try {
-        const owner = await send("/auth/registro", "POST", {
-            nombre: "Cliente titular",
-            email: "cancelar-titular@example.com",
-            password: "Una-clave-segura-123",
-        });
-        const another = await send("/auth/registro", "POST", {
-            nombre: "Otro cliente",
-            email: "cancelar-ajeno@example.com",
-            password: "Otra-clave-segura-123",
-        });
-        const reservation = await send(
-            "/reservas",
-            "POST",
-            {
-                fecha: "2099-12-10",
-                horario: "23:30",
-                mesa: 1,
-                personas: 2,
-                anticipo: 0,
-                combos: [],
-            },
-            owner.data.token,
-        );
-        reservaId = reservation.data.id;
-
-        assert.equal(reservation.status, 201);
-        assert.equal(
-            (await send(`/reservas/${reservaId}`, "DELETE", undefined, another.data.token)).status,
-            404,
-        );
-        const cancelled = await send(
-            `/reservas/${reservaId}`,
-            "DELETE",
-            undefined,
-            owner.data.token,
-        );
-        assert.equal(cancelled.status, 200);
-        assert.equal(cancelled.data.estado, "CANCELADA");
-        assert.equal(
-            (await send(`/reservas/${reservaId}`, "DELETE", undefined, owner.data.token)).status,
-            409,
-        );
-        const catalog = await send("/catalogo?fecha=2099-12-10");
-        assert.equal(catalog.data.mesas[0].disponible, true);
-        assert.equal((await send(`/reservas/${reservaId}`, "GET", undefined, owner.data.token)).data.estado, "CANCELADA");
-    } finally {
-        if (reservaId) {
-            const admin = await send("/auth/login", "POST", {
-                email: process.env.ADMIN_EMAIL,
-                password: process.env.ADMIN_PASSWORD,
-            });
-            await send(`/reservas/${reservaId}`, "DELETE", undefined, admin.data.token);
-        }
-        await new Promise((resolve) => server.close(resolve));
-    }
-});
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { send, account, customer, admin, reception, booking } from './helpers.js'
+test('registro valida edad, fecha real, teléfono, contraseña y email único; no permite elevar rol', async () => {
+  for (const overrides of [
+    { fechaNacimiento: '2020-01-01' },
+    { fechaNacimiento: '2000-02-31' },
+    { fechaNacimiento: '2099-01-01' },
+    { fechaNacimiento: undefined },
+    { telefono: 'abc' },
+    { telefono: 123456789 },
+    { password: 'aaaaaaaaaa' },
+    { nombre: '' },
+    { email: 'mal' },
+  ])
+    assert.equal((await send('/auth/registro', 'POST', account(overrides))).status, 400)
+  const values = account()
+  const registered = await send('/auth/registro', 'POST', { ...values, rol: 'ADMIN' })
+  assert.equal(registered.status, 201)
+  assert.equal(registered.data.user.rol, 'CLIENTE')
+  assert.equal(registered.data.user.fechaNacimiento, '2000-01-01')
+  assert.equal(registered.data.user.hash, undefined)
+  assert.equal(
+    (await send('/auth/registro', 'POST', { ...values, email: values.email.toUpperCase() })).status,
+    409,
+  )
+  assert.equal(
+    (await send('/auth/login', 'POST', { ...values, password: 'incorrecta' })).status,
+    401,
+  )
+  assert.equal(
+    (await send('/auth/sesion', 'GET', undefined, registered.data.token)).data.id,
+    registered.data.user.id,
+  )
+  assert.equal((await send('/auth/logout', 'POST', {}, registered.data.token)).status, 200)
+  assert.equal((await send('/auth/sesion', 'GET', undefined, registered.data.token)).status, 401)
+})
+test('reservas privadas, identidad desde sesión, cancelación propia y roles independientes', async () => {
+  assert.equal((await send('/reservas')).status, 401)
+  const owner = await customer(),
+    another = await customer()
+  const created = await send(
+    '/reservas',
+    'POST',
+    booking({ cliente: another.user.id }),
+    owner.token,
+  )
+  assert.equal(created.status, 201)
+  assert.equal(created.data.cliente, owner.user.id)
+  const path = `/reservas/${created.data.id}`
+  assert.equal((await send('/reservas', 'GET', undefined, another.token)).data.length, 0)
+  assert.equal((await send(path, 'GET', undefined, another.token)).status, 404)
+  assert.equal((await send(path, 'DELETE', undefined, another.token)).status, 404)
+  assert.equal((await send(path, 'PUT', { estado: 'CONFIRMADA' }, owner.token)).status, 403)
+  assert.equal((await send(path, 'DELETE', undefined, reception.token)).status, 403)
+  assert.equal(
+    (await send(path, 'PUT', { estado: 'CONFIRMADA', cliente: another.user.id }, reception.token))
+      .data.cliente,
+    owner.user.id,
+  )
+  assert.equal((await send(path, 'DELETE', undefined, owner.token)).data.estado, 'CANCELADA')
+  assert.equal((await send(path, 'GET', undefined, owner.token)).data.estado, 'CANCELADA')
+  assert.equal((await send(path, 'DELETE', undefined, owner.token)).status, 409)
+  assert.equal((await send('/catalogo?fecha=2099-12-20')).data.mesas[0].disponible, true)
+  assert.equal((await send(path, 'PUT', { estado: 'PENDIENTE' }, admin.token)).status, 409)
+  assert.equal((await send(path, 'DELETE', undefined, admin.token)).status, 200)
+  assert.equal((await send(path, 'GET', undefined, admin.token)).status, 404)
+})
+test('baja de usuario revoca sesiones y el perfil público no puede elevar permisos', async () => {
+  const client = await customer()
+  assert.equal(
+    (await send('/perfil', 'PUT', { nombre: 'Nombre actualizado', rol: 'ADMIN' }, client.token))
+      .data.rol,
+    'CLIENTE',
+  )
+  assert.equal((await send('/gestion/usuarios', 'GET', undefined, reception.token)).status, 403)
+  assert.equal((await send('/auth/sesion', 'GET', undefined, client.token)).status, 200)
+  assert.equal(
+    (await send(`/gestion/usuarios/${client.user.id}`, 'PUT', { activo: false }, admin.token))
+      .status,
+    200,
+  )
+  assert.equal((await send('/auth/sesion', 'GET', undefined, client.token)).status, 401)
+  assert.equal(
+    (await send(`/gestion/usuarios/${admin.user.id}`, 'PUT', { activo: false }, admin.token))
+      .status,
+    409,
+  )
+})
+test('JSON malformado devuelve 400 y las rutas inexistentes conservan el formato de error', async () => {
+  assert.equal((await send('/auth/registro', 'POST', '{"email":', undefined, true)).status, 400)
+  const missing = await send('/ruta-inexistente', 'GET', undefined, admin.token)
+  assert.equal(missing.status, 404)
+  assert.equal(missing.success, false)
+  assert.equal(
+    (await send(`/reservas/${'9'.repeat(100)}`, 'GET', undefined, admin.token)).status,
+    404,
+  )
+})

@@ -7,26 +7,27 @@ import { errorHandler } from "./middlewares/errorHandler.js";
 const app = express();
 
 const allowedOrigins = (
-    process.env.CORS_ORIGIN ||
-    "https://garypoui.github.io,http://localhost:5173,http://127.0.0.1:5173"
+  process.env.CORS_ORIGIN ||
+  "https://garypoui.github.io,http://localhost:5173,http://127.0.0.1:5173"
 )
-    .split(",")
-    .map((origin) => origin.trim());
+  .split(",")
+  .map((origin) => origin.trim());
 app.use(
-    cors({
-        origin: (origin, callback) =>
-            callback(null, !origin || allowedOrigins.includes(origin)),
-    }),
+  cors({
+    origin: (origin, callback) =>
+      callback(null, !origin || allowedOrigins.includes(origin)),
+  }),
 );
 app.use(express.json());
 
 app.get("/", (req, res) => {
-    res.status(200).json({
-        success: true,
-        data: {
-            message: "API de Brickell's funcionando correctamente.",
-        },
-    });
+  res.status(200).json({
+    success: true,
+    data: {
+      message: "API de Brickell's funcionando correctamente.",
+      revision: process.env.RENDER_GIT_COMMIT || "local",
+    },
+  });
 });
 
 app.use("/api", routes);

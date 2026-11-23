@@ -1,133 +1,69 @@
-# BRICKWEEL · Sitio público y reservas
+# Frontend de BRICKWEEL
 
-Aplicación React + Vite conectada con la API de la Entrega 2. El código de la aplicación y sus pruebas están dentro de `src`; la configuración de las herramientas permanece en la raíz de `frontend`.
+React + Vite, HashRouter para enlaces directos compatibles con GitHub Pages. Mantiene la portada 3D, carta con apertura animada y estética oscura; integra reservas, eventos, entradas y gestión con la API real.
 
-## Portada pública
+## Ejecutar
 
-El inicio presenta BRICKWEEL como una escena 3D casi de pantalla completa, con letras de frente negro, cantos iridiscentes y gran profundidad inspiradas en DEEO. Las letras se distribuyen en dos filas en horizontal y tres en vertical; cada fila se extiende hasta ambos bordes, con recortes intencionales, y pasa detrás del header transparente, sin franja ni línea divisoria. El título se inclina suavemente hacia el mouse, incluso sobre la navegación, y vuelve al centro al salir de la escena; permanece inmóvil con movimiento reducido y en interacción táctil. Debajo continúan las fotografías de noche, una carta con tapa de cuero y una sección final de reservas. La carta abre únicamente al pulsar su portada con mouse, toque o teclado, nunca al hacer scroll; incluye un botón para cerrarla y devuelve el foco a la tapa. El header enlaza La noche, Tragos y Reservas. La carta filtra por categoría y muestra fotos, ingredientes, precios y descripciones; funciona con teclado y respeta la preferencia de movimiento reducido.
-
-`HomePage.jsx`, `HeroWordmark.jsx`, `CocktailMenu.jsx` y `home.css` contienen esta experiencia. Three.js y la fuente Helvetiker Bold local se cargan bajo demanda para el título; se conserva un nombre visible si WebGL no está disponible. El render se detiene cuando el título sale de pantalla o la pestaña queda oculta. Las fotografías, la textura y las fuentes se sirven localmente. La carta contiene 14 opciones, incluidos cuatro combos: Smirnoff + Speed, Smirnoff + Sprite, Branca + Coca-Cola y Gin + tónicas. Sus importes en ARS son precios de ejemplo, no tarifas confirmadas del local; la interfaz lo indica junto al precio y al pie. Las imágenes son de ambientación y no representan los combos ofrecidos. Referencias, fuentes y decisiones: [landing-direction.md](design-review/landing-direction.md).
-
-La carta cerrada combina una fotografía de ambientación a la izquierda y la tapa a la derecha. La tapa tiene dos caras y gira 180 grados sobre una bisagra central, con una transición reversible de 1,1 segundos. Durante la apertura pasan tres hojas con fotografías, escalonadas cada 120 ms; la secuencia completa dura 1,26 segundos. La cruz permanece oculta y los controles interiores inactivos hasta que terminan los giros de la tapa y las hojas; con movimiento reducido quedan disponibles de inmediato y no se animan las hojas. Al cerrar, el foco vuelve a la portada. En escritorio se conserva el espacio del libro; en móvil las páginas abiertas se apilan para mantener la legibilidad. El catálogo se divide en páginas de cuatro opciones con flechas anterior/siguiente y contador, además de los controles de trago individual. Los filtros y la selección mantienen sincronizada la página visible.
-
-La sección La noche presenta el pub bar y boliche en Necochea, con textos sobre la pista, la barra y los encuentros en grupo. No se agregan horarios, promociones ni servicios sin confirmar.
-
-Textura de tapa: [Dark Leather](https://www.transparenttextures.com/dark-leather.html), de Atle Mo, distribuida por Transparent Textures. Copia local en `src/assets/nightlife/dark-leather.png`.
-
-La portada funciona sin la API. El formulario, el listado y la agenda conservan la integración real con Express. La navegación usa HashRouter para que los enlaces directos y la recarga funcionen en GitHub Pages: `/#/reservas`, `/#/agenda` y `/#/reservas/nueva` bajo la URL base del proyecto.
-
-## Ejecución independiente
-
-Requisito: Node.js 22.12 o superior (probado con Node.js 24) y npm.
-
-Desde la raíz del repositorio, en una terminal:
+Desde la raíz del repositorio, en terminales separadas:
 
 ```bash
-npm --prefix backend install
-npm --prefix backend start
+npm --prefix backend run demo
 ```
 
-En otra terminal:
-
 ```bash
-npm --prefix frontend install
 npm --prefix frontend run dev
 ```
 
-Abrir http://localhost:5173/Garayzar-Tomas-Brickwell/. Si el puerto está ocupado, Vite informa otro disponible. La API se inicia en http://localhost:3000. Las páginas de reservas informan el error y permiten reintentar si la API no está disponible.
+Abrir <http://localhost:5173/Garayzar-Tomas-Brickwell/>. Instalar previamente las dependencias con `npm ci` en cada carpeta. Requiere Node 22.13 o superior.
 
-## Organización
+## Pantallas
 
-```text
-frontend/
-	src/
-		assets/       Fotografía local de ambientación.
-		components/   Layout, campos, botones, estados, notificaciones y diálogos.
-		pages/        Listado/agenda y formulario de alta/edición.
-		services/     Peticiones HTTP y procesamiento de respuestas de la API.
-		utils/        Validaciones, fechas, importes, filtros y contextos compartidos.
-		styles/       Estilos generales, estructura y reservas.
-		tests/        Pruebas de navegador y accesibilidad.
-		App.jsx       Proveedores y navegación.
-		main.jsx      Entrada React, tipografías y estilos.
-```
+| Ruta después de `#`                                        | Función                                                                               |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `/`                                                        | Portada, navegación por secciones y carta consultada desde `/api/carta`.              |
+| `/registro`, `/login`                                      | Registro validado y acceso.                                                           |
+| `/eventos`                                                 | Calendario público, flyer y solicitud confirmada de entradas.                         |
+| `/agenda`                                                  | Cliente: todas sus reservas, incluidas canceladas. Personal: próximas no canceladas.  |
+| `/reservar`                                                | Reserva propia por mesa y combos.                                                     |
+| `/reservas`                                                | Listado general del personal.                                                         |
+| `/reservas/nueva`                                          | Personal registra una reserva a nombre de un cliente existente.                       |
+| `/reservas/:id/editar`                                     | Personal modifica datos y estados permitidos; los registros cerrados son de consulta. |
+| `/entradas`                                                | Entradas propias o gestión del personal: pago, ingreso y cancelación.                 |
+| `/historial`                                               | Reservas, combos reservados y eventos del cliente.                                    |
+| `/perfil`                                                  | Edición de datos personales.                                                          |
+| `/avisos`                                                  | Avisos propios, lectura y actualización cada 30 segundos.                             |
+| `/gestion/eventos`                                         | ADMIN: CRUD, publicación y estados de eventos.                                        |
+| `/gestion/usuarios`                                        | ADMIN: alta de usuarios, perfil, rol y baja lógica.                                   |
+| `/gestion/sectores`, `/gestion/paquetes`, `/gestion/carta` | ADMIN: catálogo.                                                                      |
+| `/carta-operativa`                                         | Personal: carta; recepción solo cambia disponibilidad.                                |
+| `/reportes`, `/clientes/:id/historial`                     | ADMIN: reportes e historial de clientes.                                              |
+| `/configuracion`                                           | ADMIN: políticas de cancelación y reembolsos.                                         |
 
-Las pruebas unitarias están junto al servicio y las funciones que verifican. La agenda reutiliza el listado, los filtros y los diálogos; alta y edición comparten el mismo formulario. No se incluyen reservas ficticias en la aplicación.
+Los clientes no ven gestión, anticipos ni descuentos. Pueden cancelar sus reservas mediante un diálogo, respetando la política del servidor. Recepción no puede borrar definitivamente reservas ni acceder a reportes financieros o gestión de usuarios/eventos. La API aplica los mismos permisos de forma independiente de las rutas de React.
 
-## Pantallas y operaciones
+## Integración y organización
 
-- `/reservas`: tipos de mesa con precios y capacidad desde la API, resumen con datos reales, listado, búsqueda por ID, nombre de mesa/sector/combos, filtros y paginación de ocho registros.
-- `/agenda`: reservas desde hoy, agrupadas por fecha y sin canceladas.
-- `/reservas/nueva`: fecha, personas, sector y mesa en un mapa orientativo respecto al escenario; combos anticipados con cantidades y total calculado por el servidor. Estado inicial `PENDIENTE`.
-- `/reservas/:id/editar`: consulta individual y modificación de datos y estado.
-- El detalle consulta `GET /api/reservas/:id`; eliminar requiere confirmar en un diálogo.
-- Las rutas inexistentes muestran una pantalla de recuperación.
+Todas las peticiones HTTP se realizan desde `src/services`:
 
-Los filtros quedan en la URL. Se muestran estados de carga, listados vacíos, errores de red/API y notificaciones de éxito. Los controles se bloquean durante un envío. Las consultas tienen un límite de 15 segundos en desarrollo y 90 segundos en producción para contemplar el arranque en frío de Render gratuito; se cancelan al abandonar la pantalla.
+- `apiClient.js`: URL, Bearer, cancelación, espera y formato de respuestas.
+- `reservaService.js`: operaciones de reservas.
+- `catalogoService.js`: disponibilidad por noche y exclusión protegida al editar.
+- `negocioService.js`: carta, eventos, entradas, gestión, perfil, avisos y reportes.
 
-## Integración
+`useRemote` y `useCatalogo` coordinan carga, error, cancelación de consultas y reintento mediante esos servicios. No hay `fetch` en componentes o páginas. La carta y los combos tienen una única fuente de precios en el backend; no hay un listado comercial estático en React.
 
-`src/services/reservaService.js` centraliza los cinco endpoints de `/api/reservas`; `catalogoService.js` consulta `/api/catalogo` con fecha y exclusión de la propia reserva. Ambos usan `apiClient.js` para interpretar `{ success, data }`, errores y códigos HTTP. No hay llamadas a `fetch` en componentes o páginas.
+La sesión se guarda en `sessionStorage` de la pestaña y se comprueba al recargar. Un 401 invalida la sesión; un fallo de conexión permite reintentar. Las peticiones de desarrollo esperan hasta 15 segundos; producción hasta 90 segundos para el arranque de Render gratuito.
 
-Por defecto se utiliza `/api` y el proxy de Vite apunta a `http://localhost:3000`, tanto en desarrollo como en preview. Esto permite usar el backend original sin modificar su configuración CORS.
-
-Variables opcionales en `frontend/.env.local`:
+El proxy de Vite apunta a `http://localhost:3000`. Variables opcionales en `frontend/.env.local`:
 
 ```dotenv
 API_PROXY_TARGET=http://localhost:3000
 VITE_API_URL=/api
 ```
 
-Reiniciar Vite después de cambiarlas. `API_PROXY_TARGET` solo configura el proxy; `VITE_API_URL` es pública y nunca debe contener secretos. Para apuntar directamente a otro origen, ese servidor deberá permitir CORS.
-
-## Validación y accesibilidad
-
-- Campos obligatorios con `label`, errores asociados mediante `aria-describedby` y `aria-invalid`, foco en el primer error y notificación común.
-- Fecha de alta desde mañana, horario válido, IDs enteros positivos e importes finitos no negativos.
-- Como protección del formulario, el anticipo no puede superar el total.
-- Al editar, una fecha que no cambió se omite del `PUT`: permite actualizar reservas pasadas según el contrato del backend.
-- HTML semántico, navegación activa, enlace para saltar al contenido y foco visible.
-- Diálogos nativos con foco contenido, Escape, retorno al control de origen y foco inicial en conservar al eliminar.
-- Notificaciones dentro del diálogo cuando está abierto, anunciadas con `role="alert"` o `role="status"`.
-- Estados con texto además de color, iconos con nombres accesibles, imagen con alternativa textual y respeto por movimiento reducido.
-- Diseño responsivo probado entre 320 y 1440 px; auditoría automatizada axe para reglas WCAG A/AA en los estados cubiertos. No reemplaza una auditoría manual integral.
-- Enfoque mobile-first: base móvil y mejoras progresivas con `min-width` en los cinco archivos CSS. La prueba que inicia a 320 px comprueba campos de 16 px, controles táctiles de al menos 44 px y el resumen debajo del formulario.
-
-## Diseño e identidad
-
-La portada del 27/10/2026 sigue el nuevo pedido basado en DEEO Studio: negro, volumen 3D con cantos de color sin acabado plateado, fotografías grandes y carta con aspecto de libro. Helvetiker Bold para el título 3D, Barlow Condensed para el resto de la marca, Georgia para los títulos editoriales y Manrope para navegación y textos. La carta destaca BRICKWELL en la tapa, abre con tres hojas escalonadas en 1,26 segundos y cierra en 1,1 segundos; con movimiento reducido no se anima. El resto del sitio conserva la marca BRICKWEEL. Las capturas están en `design-review/home-*.png` y `design-review/carta-*.png`.
-
-### Área de reservas
-
-El área de reservas continúa el lenguaje de la portada: fondo negro `#080809`, superficies `#141416`, texto claro y acciones verde pálido `#D3EFB1`. La navegación superior sustituye a la barra lateral, el resumen se presenta como una franja de datos y el listado y el formulario usan secciones abiertas, sin paneles blancos. Los diálogos y las notificaciones, incluidos los portales, comparten el tema oscuro. Las variables semánticas `--color-*` están en `src/styles/global.css`; `layout.css` define la estructura y `reservas.css` las vistas operativas. Los estados tienen etiquetas y colores propios; las acciones destructivas se distinguen en rosa.
-
-Manrope se sirve localmente para datos y formularios, Georgia para títulos y Barlow Condensed para la marca. Las filas destacan horario y estado, siempre con etiqueta textual. El formulario nuevo muestra fecha, personas, sector, mapa de mesas, cantidades de combos y resumen del costo con el nombre de la cuenta. No solicita un ID de cliente. `booking.css` conserva el tema oscuro, con colores independientes para las tres zonas. Las reservas previas sin mesa conservan el formulario de la Entrega 2.
-
-El listado conserva filtros y parámetros en la URL. La agenda del personal agrupa por fecha las reservas desde hoy sin canceladas; la del cliente incluye todas sus reservas, también pasadas y canceladas. El mapa tiene botones accesibles con nombre de mesa, precio, capacidad y disponibilidad; los colores no sustituyen esos textos. Las mesas ocupadas o de capacidad insuficiente no se pueden seleccionar. Ante un conflicto HTTP 409 se actualiza la disponibilidad sin borrar los combos elegidos. El resumen pasa debajo de los campos en móvil.
-
-El panel se implementó a partir de los documentos del repositorio. La ampliación del 02/11 incorpora selección de mesas, disponibilidad por noche, combos y autenticación. Eventos y pagos en línea siguen fuera del alcance implementado.
-
-### Cuenta
-
-`/#/registro` y `/#/login` comparten la fotografía, tipografías y tema oscuro del sitio. El registro pide nombre, email y contraseña de al menos diez caracteres; inicia sesión automáticamente. Las rutas de reservas y agenda exigen una sesión y regresan al destino solicitado después del acceso. La portada permanece pública e incluye un enlace a la cuenta. El botón de cierre está junto al nombre de usuario.
-
-La sesión incluye `rol`. Los clientes ven únicamente **Agenda** (`/#/agenda`) y **Reservar** (`/#/reservar`), sin panel de métricas ni controles de edición, validación o eliminación. El detalle de sus reservas es de solo lectura. Las rutas de gestión redirigen a su agenda, y la dirección antigua de nueva reserva conserva los parámetros al redirigir a Reservar.
-
-Administración y recepción conservan **Reservas**, **Agenda** y **Nueva reserva**, con todas las reservas. Las pendientes incorporan un botón con icono y tooltip para validar, con confirmación en un diálogo. La edición muestra al cliente original y no reasigna la reserva al operador. La API aplica los permisos de manera independiente del frontend. Las pruebas cubren cliente y admin en contextos de navegador independientes y verifican acciones sin solapamientos a 320, 768, 1280 y 1440 px.
-
-El token se guarda en `sessionStorage` de la pestaña, se envía en el encabezado Bearer y se valida con `/api/auth/sesion` al recargar. Un 401 borra la sesión y vuelve al acceso; un error de conexión permite reintentar sin borrar el token. La sesión vence a los siete días y cerrar sesión la revoca en el servidor. No hay recuperación de contraseña ni verificación de email. `auth.spec.js` cubre acceso, registro, recarga, privacidad, sesión inválida, accesibilidad y capturas de 320 a 1440 px.
-
-La dirección, las referencias consultadas y las limitaciones están documentadas en [design-review/README.md](design-review/README.md). Allí también se enlazan las capturas del rediseño.
-
-## Alcance del backend
-
-La API implementa registro, sesiones, CRUD de reservas y catálogo de sectores, mesas y paquetes. El servidor asigna el cliente desde la sesión: los clientes consultan solo sus reservas y el personal gestiona todas. El frontend nunca envía un ID de cliente. La mesa y los combos se eligen por nombre y la API calcula su total. El catálogo y el mapa son orientativos, con tarifas de referencia visibles, pendientes de confirmación por el local. Los combos se reservan junto con la mesa y se pagan según lo coordinado con el local; no hay cobros en línea. La carta de la portada sigue siendo contenido editorial estático.
-
-Las cuentas, sesiones y reservas se almacenan en memoria: reiniciar el backend elimina los datos. El frontend no agrega persistencia local para ocultar esa limitación. El control de acceso se aplica en el servidor, además de la protección visual de rutas. Antes de usar cuentas o reservas reales hace falta una base de datos durable.
+En GitHub Pages se necesita `VITE_API_URL=https://tu-api/api` al compilar; no existe el proxy de Vite en el hosting estático. La API debe permitir el origen mediante CORS.
 
 ## Verificación
-
-Desde `frontend`:
 
 ```bash
 npm test
@@ -138,17 +74,14 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Las pruebas E2E inician una API aislada en el puerto 3101 y otro Vite en el 5175, sin reutilizar servidores existentes. Ambos puertos deben estar libres y las dependencias del backend instaladas. Se comprueban CRUD, validaciones, filtros, agenda, carga, fallos y reintentos, errores dentro del diálogo, paginación, historial, accesibilidad y tamaños móviles/escritorio. Los datos de prueba se eliminan de esa API temporal; no se toca la API del puerto 3000. Las capturas se generan en `test-results` (ignorado por Git).
+Playwright inicia API y Vite aislados en 3101 y 5175; SQLite se ejecuta en memoria y las cuentas son de prueba. La configuración es compatible con Windows y Linux. No deben estar ocupados esos puertos.
 
-`npm run format` aplica formato al código del frontend.
+La suite incluye flujos de cuenta, CRUD de reservas, privacidad, cancelación, disponibilidad, errores y reintentos, gestión de catálogo/usuarios, calendario, entradas y pago acreditado, perfil, políticas, accesibilidad automatizada y controles de desbordes a distintos tamaños. Las capturas y trazas se generan en `test-results`, fuera de Git. La auditoría automatizada no acredita todos los criterios de accesibilidad ni sustituye la revisión visual.
 
-## Build y despliegue
+## Diseño y limitaciones
 
-```bash
-npm run build
-npm run preview
-```
+Fuentes y fotografías se sirven localmente; el título 3D carga Three.js bajo demanda y respeta movimiento reducido. Se conservan teclado, foco de diálogos y notificaciones, estados de carga y confirmaciones para acciones destructivas. Las pantallas nuevas reutilizan el tema y los componentes existentes.
 
-Preview sirve el build local y utiliza el mismo proxy, con la API encendida. `.github/workflows/pages.yml` compila y publica `frontend/dist` al actualizar `main`. Pages debe tener **GitHub Actions** como fuente y no necesita dominio personalizado. La base de Vite es `/Garayzar-Tomas-Brickwell/` y las rutas usan hash.
+El mapa y las tarifas iniciales son de referencia. Las imágenes son de ambientación. No hay cobro electrónico: la entrada queda pendiente hasta que el personal acredita el pago. Los avisos son internos a la aplicación. La persistencia depende del backend y de que el hosting conserve su archivo SQLite.
 
-GitHub Pages no ejecuta Express ni el proxy de Vite. La API ya está desplegada en `https://brickwell-api.onrender.com`, permite CORS desde `https://garypoui.github.io` y la variable del repositorio `VITE_API_URL` contiene `https://brickwell-api.onrender.com/api`. Al recrear o cambiar el servicio hay que actualizar esa variable y volver a publicar Pages. Es una URL pública, no un secreto. El plan gratuito suspende la API por inactividad y su almacenamiento sigue siendo temporal: no es un sistema preparado para pagos ni reservas comerciales definitivas.
+Referencias históricas de diseño: [design-review/README.md](design-review/README.md) y [landing-direction.md](design-review/landing-direction.md).

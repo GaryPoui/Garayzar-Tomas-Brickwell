@@ -6,6 +6,8 @@ import { Button, LoadingState, StatusBadge } from './ui.jsx'
 import { useAuth, useNotification, useReservas } from '../utils/applicationContext.js'
 import { eliminarReserva, modificarReserva, obtenerReserva } from '../services/reservaService.js'
 import { fechaLegible, moneda, referencia } from '../utils/reservas.js'
+import { puedeCancelar, reservaTransitions } from '../utils/negocio.js'
+import useRemote from '../utils/useRemote.js'
 
 export function ReservationDetail({ id, onClose }) {
   const { staff, user } = useAuth()
@@ -82,6 +84,18 @@ export function ReservationDetail({ id, onClose }) {
               <dt>Anticipo</dt>
               <dd>{moneda(reserva.anticipo)}</dd>
             </div>
+            {reserva.descuento > 0 && (
+              <div>
+                <dt>Descuento aplicado</dt>
+                <dd>{reserva.descuento}%</dd>
+              </div>
+            )}
+            {staff && reserva.notas && (
+              <div>
+                <dt>Notas internas</dt>
+                <dd>{reserva.notas}</dd>
+              </div>
+            )}
             <div>
               <dt>Saldo pendiente</dt>
               <dd>{moneda(reserva.precioTotal - reserva.anticipo)}</dd>
@@ -109,7 +123,7 @@ export function ReservationDetail({ id, onClose }) {
             <Button variant="secondary" onClick={onClose}>
               Cerrar
             </Button>
-            {staff && (
+            {staff && reservaTransitions[reserva.estado]?.length > 0 && (
               <Link className="button button-primary" to={`/reservas/${id}/editar`}>
                 <Pencil size={17} aria-hidden="true" />
                 Editar reserva
@@ -118,6 +132,54 @@ export function ReservationDetail({ id, onClose }) {
           </footer>
         </>
       )}
+    </Modal>
+  )
+}
+
+export function CancelReservation({ reserva, onClose }) {
+  const policy = useRemote('/configuracion')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const { refresh } = useReservas()
+  const notify = useNotification()
+  async function cancel() {
+    if (busy) return
+    setBusy(true)
+    try {
+      await eliminarReserva(reserva.id)
+      refresh()
+      notify(`La reserva #${reserva.id} quedó cancelada y la mesa se liberó.`)
+      onClose()
+    } catch (failure) {
+      setError(failure.message)
+      setBusy(false)
+    }
+  }
+  return (
+    <Modal title="Cancelar reserva" onClose={onClose} busy={busy}>
+      <p>
+        ¿Cancelar la reserva #{reserva.id} del {fechaLegible(reserva.fecha)}? Conservarás el
+        registro en tu agenda. Si registraste un anticipo, coordiná cualquier reembolso con el
+        local.
+      </p>
+      <p>
+        {policy.data
+          ? `La cancelación se permite hasta ${policy.data.cancelacionHoras} horas antes del horario reservado. ${policy.data.reembolsos}`
+          : 'La política vigente de cancelación será verificada por el servidor.'}
+      </p>
+      {error && (
+        <p className="field-error" role="alert">
+          {error}
+        </p>
+      )}
+      <footer className="modal-actions">
+        <Button variant="secondary" onClick={onClose} disabled={busy} data-autofocus>
+          Conservar reserva
+        </Button>
+        <Button variant="danger" onClick={cancel} busy={busy} disabled={!puedeCancelar(reserva)}>
+          Confirmar cancelación
+        </Button>
+      </footer>
     </Modal>
   )
 }

@@ -1,0 +1,28 @@
+# Optional paid configuration. Not applied by the existing free service.
+# Activate only after approving Render compute and disk charges.
+services:
+  - type: web
+    name: brickwell-api
+    runtime: node
+    plan: starter
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /
+    disk:
+      name: brickwell-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_PATH
+        value: /var/data/brickwell.sqlite
+      - key: CORS_ORIGIN
+        value: https://garypoui.github.io
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

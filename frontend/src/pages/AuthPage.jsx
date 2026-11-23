@@ -5,11 +5,18 @@ import { useAuth } from '../utils/applicationContext.js'
 import { Button, Field, LoadingState } from '../components/ui.jsx'
 import barPhoto from '../assets/nightlife/club.jpg'
 import '../styles/auth.css'
+import { validarPerfil } from '../utils/negocio.js'
 
 export default function AuthPage({ register = false }) {
   const { user, home, loading, error: sessionError, authenticate, retry } = useAuth()
   const location = useLocation()
-  const [values, setValues] = useState({ nombre: '', email: '', password: '' })
+  const [values, setValues] = useState({
+    nombre: '',
+    email: '',
+    password: '',
+    fechaNacimiento: '',
+    telefono: '',
+  })
   const [errors, setErrors] = useState({})
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -18,7 +25,10 @@ export default function AuthPage({ register = false }) {
   const heading = useRef(null)
   const destination = location.state?.from
   const from =
-    typeof destination === 'string' && /^\/(reservas|agenda|reservar)(\/|\?|$)/.test(destination)
+    typeof destination === 'string' &&
+    /^\/(reservas|agenda|reservar|eventos|entradas|historial|perfil|avisos)(\/|\?|$)/.test(
+      destination,
+    )
       ? destination
       : home
 
@@ -36,12 +46,21 @@ export default function AuthPage({ register = false }) {
   async function submit(event) {
     event.preventDefault()
     if (busy) return
-    const failures = {}
+    const failures = register ? validarPerfil(values) : {}
     if (register && values.nombre.trim().length < 2) failures.nombre = 'Ingresá tu nombre.'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim()))
       failures.email = 'Ingresá un email válido.'
-    if (!values.password || (register && values.password.length < 10))
-      failures.password = register ? 'Usá al menos 10 caracteres.' : 'Ingresá tu contraseña.'
+    if (
+      !values.password ||
+      (register &&
+        (values.password.length < 10 ||
+          !/[A-Z]/.test(values.password) ||
+          !/[a-z]/.test(values.password) ||
+          !/\d/.test(values.password)))
+    )
+      failures.password = register
+        ? 'Usá al menos 10 caracteres, mayúscula, minúscula y número.'
+        : 'Ingresá tu contraseña.'
     setErrors(failures)
     if (Object.keys(failures).length) {
       form.current.elements.namedItem(Object.keys(failures)[0])?.focus()
@@ -141,7 +160,11 @@ export default function AuthPage({ register = false }) {
                       value={values.password}
                       onChange={change}
                       error={errors.password}
-                      hint={register ? 'Al menos 10 caracteres.' : undefined}
+                      hint={
+                        register
+                          ? 'De 10 a 128 caracteres, con mayúscula, minúscula y número.'
+                          : undefined
+                      }
                     />
                     <button
                       className="auth-reveal icon-button"
@@ -154,6 +177,33 @@ export default function AuthPage({ register = false }) {
                       {visible ? <EyeOff size={19} /> : <Eye size={19} />}
                     </button>
                   </div>
+                  {register && (
+                    <>
+                      <Field
+                        id="fechaNacimiento"
+                        label="Fecha de nacimiento"
+                        type="date"
+                        required
+                        value={values.fechaNacimiento}
+                        onChange={change}
+                        error={errors.fechaNacimiento}
+                        hint="Edad mínima: 16 años."
+                        autoComplete="bday"
+                      />
+                      <Field
+                        id="telefono"
+                        label="Teléfono"
+                        type="tel"
+                        required
+                        value={values.telefono}
+                        onChange={change}
+                        error={errors.telefono}
+                        maxLength={15}
+                        autoComplete="tel"
+                        hint="Entre 8 y 15 dígitos, sin espacios ni signos."
+                      />
+                    </>
+                  )}
                   {error && (
                     <p className="auth-error" role="alert">
                       {error}

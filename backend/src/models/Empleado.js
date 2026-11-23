@@ -1,11 +1,6 @@
-class Empleado {
-    constructor(id, nombre, email, contraseña, telefono) {
-        this.id = id;
-        this.nombre = nombre;
-        this.email = email;
-        this.contraseña = contraseña;
-        this.telefono = telefono;
-    }
+import Usuario from './Usuario.js'
+export default class Empleado extends Usuario {
+  constructor(data) {
+    super({ ...data, rol: 'RECEPCIONISTA' })
+  }
 }
-
-export default Empleado;

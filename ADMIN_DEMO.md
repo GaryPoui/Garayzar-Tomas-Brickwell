@@ -1,40 +1,26 @@
-# Admin de prueba
+# Acceso para la demostración local
 
-Cuenta creada para probar el sistema localmente:
-
-- Email: `admin@brickwell.test`
-- Contrasena: `KDOjxqyMSkGaHQlt`
-- Rol: `ADMIN`
-- Acceso local: http://127.0.0.1:5176/Garayzar-Tomas-Brickwell/#/login
-
-El administrador puede ver todas las reservas, editarlas, validar las pendientes
-como confirmadas y eliminarlas. El registro publico solo crea clientes.
-
-## Iniciar la API con esta cuenta
-
-Desde la raiz del proyecto:
+Desde la raíz:
 
 ```bash
-PORT=3103 ADMIN_EMAIL=admin@brickwell.test ADMIN_PASSWORD='KDOjxqyMSkGaHQlt' npm --prefix backend start
+npm --prefix backend run demo
 ```
 
-Para conectar el frontend local con esa API:
+En otra terminal:
 
 ```bash
-API_PROXY_TARGET=http://127.0.0.1:3103 npm --prefix frontend run dev -- --host 127.0.0.1 --port 5176 --strictPort
+npm --prefix frontend run dev
 ```
 
-La cuenta se crea al iniciar la API con ambas variables de entorno. Subir este
-archivo no crea automaticamente el administrador en Render: alli se deben
-configurar `ADMIN_EMAIL` y `ADMIN_PASSWORD` en el panel privado del servicio.
+Abrir <http://localhost:5173/Garayzar-Tomas-Brickwell/#/login>.
 
-## Advertencia
+| Rol           | Email                    | Contraseña           |
+| ------------- | ------------------------ | -------------------- |
+| ADMIN         | admin@brickwell.test     | Brickwell-demo-12345 |
+| RECEPCIONISTA | recepcion@brickwell.test | Recepcion-demo-12345 |
 
-Estas credenciales son publicas al versionar este documento y son exclusivamente
-para la demo local. No reutilizar esta contrasena ni configurar esta misma cuenta
-en un servicio publico con datos reales. Para el hosting, usar una contrasena nueva
-y privada que no se guarde en el repositorio.
+Son cuentas explícitas de demostración local. El servidor de demo escucha solo en 127.0.0.1. El arranque normal no incorpora claves predeterminadas y estas credenciales no deben usarse para un servicio público.
 
-Las cuentas, sesiones y reservas se almacenan en memoria. Al reiniciar la API se
-pierden los datos; la cuenta admin se recrea si se mantienen sus variables de
-entorno. No usar la demo para reservas o datos personales reales.
+El cliente se registra desde la interfaz con fecha de nacimiento y teléfono. Las cuentas, sesiones y datos se guardan en `backend/data/brickwell.sqlite`. Reiniciar el proceso conserva ese archivo. No borrar la base si se necesita conservar la demostración.
+
+Para producción, configurar `ADMIN_EMAIL` y `ADMIN_PASSWORD` privados en el entorno del servicio. Se crean únicamente si el email no existe en esa base. El hosting necesita almacenamiento persistente para SQLite.

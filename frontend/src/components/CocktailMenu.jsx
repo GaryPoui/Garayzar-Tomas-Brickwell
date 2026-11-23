@@ -5,191 +5,38 @@ import whiskyPhoto from '../assets/nightlife/bar-cocktails.jpg'
 import citrusPhoto from '../assets/nightlife/citrus.jpg'
 import barPhoto from '../assets/nightlife/club.jpg'
 import clubPhoto from '../assets/nightlife/dancefloor.jpg'
+import useRemote from '../utils/useRemote.js'
+import { Button, LoadingState } from './ui.jsx'
 
-const drinks = [
-  {
-    id: 'old-fashioned',
-    name: 'Old Fashioned',
-    price: 9000,
-    category: 'Clásicos',
-    character: 'Intenso, con un final suave.',
-    description:
-      'Whisky, un toque de dulzor y el aroma de la naranja. Un clásico para disfrutar despacio, mientras la noche toma ritmo.',
-    ingredients: 'Whisky · azúcar · bitter · naranja',
-    image: whiskyPhoto,
-    alt: 'Cóctel ámbar con un gran cubo de hielo y piel de naranja',
-    position: '62% center',
-  },
-  {
-    id: 'mojito',
-    name: 'Mojito',
-    price: 7500,
-    category: 'Frescos',
-    character: 'Fresco desde el primer sorbo.',
-    description:
-      'La lima y la menta se encuentran con el ron y las burbujas. Ligero, cítrico y con toda la frescura que pide la pista.',
-    ingredients: 'Ron blanco · lima · menta · azúcar · soda',
-    image: citrusPhoto,
-    alt: 'Selección de cócteles frescos con lima, menta y frutas',
-    position: '50% center',
-  },
-  {
-    id: 'negroni',
-    name: 'Negroni',
-    price: 8500,
-    category: 'Clásicos',
-    character: 'Amargo, aromático, inolvidable.',
-    description:
-      'Gin, vermut rojo y bitter en equilibrio. Una mezcla con carácter, servida con hielo y un perfume de naranja.',
-    ingredients: 'Gin · vermut rojo · bitter italiano · naranja',
-    image: barPhoto,
-    alt: 'Bartender preparando un cóctel sobre una barra iluminada',
-    position: '45% center',
-  },
-  {
-    id: 'caipirinha',
-    name: 'Caipirinha',
-    price: 7500,
-    category: 'Frescos',
-    character: 'Un viaje de ida al verano.',
-    description:
-      'Cachaça, lima recién cortada y azúcar sobre mucho hielo. Simple, vibrante y con ese punto justo entre dulce y ácido.',
-    ingredients: 'Cachaça · lima · azúcar · hielo',
-    image: citrusPhoto,
-    alt: 'Tragos cítricos con fruta fresca sobre la barra',
-    position: '25% center',
-  },
-  {
-    id: 'citrus',
-    name: 'Citrus & menta',
-    price: 5000,
-    category: 'Sin alcohol',
-    character: 'Todo el sabor. Cero alcohol.',
-    description:
-      'Limón, naranja y hojas de menta con un final de soda. Una mezcla fresca y perfumada para brindar a tu manera.',
-    ingredients: 'Limón · naranja · menta · almíbar · soda',
-    image: citrusPhoto,
-    alt: 'Inspiración de coctelería con cítricos y hierbas frescas',
-    position: '15% center',
-  },
-  {
-    id: 'gin-tonic',
-    name: 'Gin tonic',
-    price: 8000,
-    category: 'Clásicos',
-    character: 'Botánicos, cítricos y burbujas.',
-    description: 'Gin con tónica, una rodaja de limón y abundante hielo.',
-    ingredients: 'Gin · tónica · limón · hielo',
-    image: citrusPhoto,
-    alt: 'Cócteles cítricos como inspiración de presentación',
-    position: '60% center',
-  },
-  {
-    id: 'fernet-cola',
-    name: 'Fernet con cola',
-    price: 7000,
-    category: 'Clásicos',
-    character: 'El clásico de cada encuentro.',
-    description: 'Fernet Branca y Coca-Cola, servidos con hielo.',
-    ingredients: 'Fernet Branca · Coca-Cola · hielo',
-    image: barPhoto,
-    alt: 'Barra de coctelería iluminada',
-    position: '45% center',
-  },
-  {
-    id: 'cuba-libre',
-    name: 'Cuba libre',
-    price: 7500,
-    category: 'Clásicos',
-    character: 'Ron, lima y un clásico de fondo.',
-    description: 'Ron blanco, cola y lima fresca sobre hielo.',
-    ingredients: 'Ron blanco · cola · lima · hielo',
-    image: whiskyPhoto,
-    alt: 'Cóctel sobre la barra como inspiración de presentación',
-    position: '62% center',
-  },
-  {
-    id: 'aperol-spritz',
-    name: 'Aperol spritz',
-    price: 8000,
-    category: 'Frescos',
-    character: 'Un aperitivo con acento naranja.',
-    description: 'Aperol, espumante y soda con una rodaja de naranja.',
-    ingredients: 'Aperol · espumante · soda · naranja',
-    image: citrusPhoto,
-    alt: 'Selección de cócteles con frutas frescas',
-    position: '35% center',
-  },
-  {
-    id: 'pomelo',
-    name: 'Pomelo & romero',
-    price: 4500,
-    category: 'Sin alcohol',
-    character: 'Cítrico y herbal.',
-    description: 'Jugo de pomelo, un toque de almíbar y soda, terminado con romero.',
-    ingredients: 'Pomelo · romero · almíbar · soda',
-    image: citrusPhoto,
-    alt: 'Tragos con cítricos y hierbas como inspiración de presentación',
-    position: '75% center',
-  },
-  {
-    id: 'smirnoff-speed',
-    name: 'Smirnoff + Speed',
-    price: 38000,
-    category: 'Combos',
-    serving: '1 botella + 4 latas',
-    character: 'Vodka y energizante.',
-    description: 'Una botella de Smirnoff de 700 ml y cuatro latas de Speed de 250 ml, con hielo.',
-    ingredients: 'Smirnoff 700 ml · 4 Speed de 250 ml · hielo',
-    image: barPhoto,
-    alt: 'Barra del club como imagen de ambientación; no representa el combo',
-    position: '45% center',
-  },
-  {
-    id: 'smirnoff-sprite',
-    name: 'Smirnoff + Sprite',
-    price: 34000,
-    category: 'Combos',
-    serving: '1 botella + 2 gaseosas',
-    character: 'Vodka y lima-limón.',
-    description: 'Una botella de Smirnoff de 700 ml, dos Sprite de 1,5 litros y hielo.',
-    ingredients: 'Smirnoff 700 ml · 2 Sprite de 1,5 l · hielo',
-    image: barPhoto,
-    alt: 'Barra del club como imagen de ambientación; no representa el combo',
-    position: '45% center',
-  },
-  {
-    id: 'branca-coca',
-    name: 'Branca + Coca-Cola',
-    price: 42000,
-    category: 'Combos',
-    serving: '1 botella + 2 gaseosas',
-    character: 'Fernet y cola.',
-    description: 'Una botella de Fernet Branca de 750 ml, dos Coca-Cola de 1,5 litros y hielo.',
-    ingredients: 'Fernet Branca 750 ml · 2 Coca-Cola de 1,5 l · hielo',
-    image: barPhoto,
-    alt: 'Barra del club como imagen de ambientación; no representa el combo',
-    position: '45% center',
-  },
-  {
-    id: 'gin-tonicas',
-    name: 'Gin + tónicas',
-    price: 45000,
-    category: 'Combos',
-    serving: '1 botella + 4 tónicas',
-    character: 'Un clásico para la mesa.',
-    description: 'Una botella de gin de 700 ml, cuatro tónicas de 269 ml, limón y hielo.',
-    ingredients: 'Gin 700 ml · 4 tónicas de 269 ml · limón · hielo',
-    image: barPhoto,
-    alt: 'Barra del club como imagen de ambientación; no representa el combo',
-    position: '45% center',
-  },
-]
-
-const categories = ['Todos', 'Clásicos', 'Frescos', 'Sin alcohol', 'Combos']
+const photos = { bar: barPhoto, whisky: whiskyPhoto, citrus: citrusPhoto }
 const pageSize = 4
 
 export default function CocktailMenu() {
+  const { data, loading, error, refresh } = useRemote('/carta')
+  return (
+    <section id="tragos" className="cocktail-section" tabIndex={-1} aria-label="Carta de tragos">
+      {loading ? (
+        <LoadingState label="Cargando la carta..." />
+      ) : error ? (
+        <div role="alert">
+          <h2>Carta de tragos</h2>
+          <p>{error}</p>
+          <Button onClick={refresh}>Reintentar carta</Button>
+        </div>
+      ) : !data?.length ? (
+        <>
+          <h2>Carta de tragos</h2>
+          <p>No hay productos disponibles por el momento.</p>
+        </>
+      ) : (
+        <CocktailBook drinks={data} />
+      )}
+    </section>
+  )
+}
+
+function CocktailBook({ drinks }) {
+  const categories = ['Todos', ...new Set(drinks.map((item) => item.category))]
   const [category, setCategory] = useState('Todos')
   const [selectedId, setSelectedId] = useState(drinks[0].id)
   const [opened, setOpened] = useState(false)
@@ -338,12 +185,7 @@ export default function CocktailMenu() {
   }
 
   return (
-    <section
-      id="tragos"
-      className="cocktail-section"
-      aria-labelledby="drinks-heading"
-      tabIndex={-1}
-    >
+    <>
       <div className="section-intro">
         <span className="section-marker">En la barra</span>
         <h2 id="drinks-heading">
@@ -444,7 +286,7 @@ export default function CocktailMenu() {
           >
             <div className="drink-photo">
               <img
-                src={selected.image}
+                src={photos[selected.image] || barPhoto}
                 alt={selected.alt}
                 style={{ objectPosition: selected.position }}
                 width="640"
@@ -491,6 +333,6 @@ export default function CocktailMenu() {
         </div>
       </div>
       <p className="menu-bottom-note">Buenas mezclas. Mejores encuentros.</p>
-    </section>
+    </>
   )
 }

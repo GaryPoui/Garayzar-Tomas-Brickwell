@@ -1,5 +1,40 @@
 # Memoria de Codex — Brickell’s
 
+## Actualización del 23/11/2026
+
+Esta sección reemplaza las limitaciones de las notas anteriores. El usuario pidió revisar toda la consigna y luego autorizó completar los faltantes. El video queda a su cargo. La autorización anterior de detener pruebas correspondía al cierre del 16/11 y ya no aplica a esta tarea.
+
+### Implementación de la entrega final
+
+- SQLite local mediante `node:sqlite`, Node >=22.13. Base por defecto `backend/data/brickwell.sqlite`, ignorada por Git. `DATABASE_PATH=:memory:` en pruebas; no borrar ni resetear la base de uso habitual. Secuencias persistentes, índices únicos y transacciones para reservas y cupos de entradas.
+- Autenticación separada en controlador, servicio, repositorios de usuarios/sesiones y middlewares. Modelos de usuario por rol. Sesiones revocables y persistentes, hashes scrypt y tokens aleatorios almacenados como hash.
+- Registro exige nombre, email único, contraseña de 10 a 128 caracteres con mayúscula/minúscula/número, fecha de nacimiento con edad de 16 a 120 años y teléfono de 8 a 15 dígitos.
+- El alta sin mesa fue retirada. Solo mesas existentes/sectores habilitados y combos activos, cantidades estrictas; precio calculado en servidor. Una reserva vigente por mesa/fecha y otra por cliente/fecha.
+- Cancelación del cliente integrada en React con confirmación y conservación del historial. Anticipación por defecto de dos horas, configurable por ADMIN entre 2 y 168 horas. Solo el personal registra anticipos y descuentos. Recepción no puede eliminar definitivamente reservas. Los estados finales no se reabren y el check-in exige el día de la reserva.
+- El personal crea reservas a nombre de un cliente previamente registrado mediante un selector. No se asignan al operador. La reserva conserva los precios acordados si solo cambia de estado. Las notas internas no se exponen al cliente.
+- Carta real en `/api/carta`; se retiró el catálogo estático del frontend. Combos de carta y reservas comparten precios del backend. Gestión de sectores (cuatro mesas nuevas por sector), paquetes y carta; recepción solo cambia disponibilidad de tragos.
+- Calendario público `/eventos` y flyer; gestión administrativa de eventos, publicación, estados, capacidad y entradas. Las imágenes opcionales son URLs HTTPS.
+- Entradas: una vigente por cliente/evento, cupo transaccional, solicitud con pago pendiente, acreditación por personal, ingreso único y cancelación que libera cupo. Una gratuita se confirma automáticamente. Cancelar un evento cancela sus entradas y genera avisos. No se implementó una pasarela de cobro ni reembolso automático.
+- Nuevas pantallas de usuarios/roles/baja lógica, perfil, historial, avisos privados, reportes financieros para ADMIN y políticas de cancelación. Avisos internos persistentes y recordatorios idempotentes; no email, SMS ni WhatsApp. Búsqueda de recordatorios cada minuto con API activa y al consultar avisos.
+- `frontend/src/services/negocioService.js` centraliza los endpoints nuevos. `useRemote` maneja carga, cancelación, error y reintento. Se conserva el diseño y componentes de diálogos existentes.
+- Playwright usa variables `env` compatibles con Windows y Linux. Pruebas aisladas en puertos 3101/5175 y SQLite en memoria; `NODE_ENV=test` eleva solo el límite de intentos de autenticación para la suite.
+- Se normalizó el formato a LF mediante Prettier y `.gitattributes`. No reintroducir CRLF ni el alta de reservas sin mesa para mantener expectativas antiguas de pruebas.
+
+### Ejecución y publicación
+
+- Demo local: `npm --prefix backend run demo` y, en otra terminal, `npm --prefix frontend run dev`. Frontend en `http://localhost:5173/Garayzar-Tomas-Brickwell/`.
+- ADMIN demo: `admin@brickwell.test` / `Brickwell-demo-12345`; recepción: `recepcion@brickwell.test` / `Recepcion-demo-12345`. Solo el modo demo configura estas cuentas y escucha en 127.0.0.1. El arranque normal no tiene credenciales predeterminadas.
+- README principal, backend, frontend y ADMIN_DEMO actualizados. El README incluye un recorrido sugerido para el video; el video no fue grabado.
+- Los cambios están preparados localmente. No confundir implementación local con publicación: el hosting existente requiere despliegue y almacenamiento persistente para SQLite. Render gratuito tiene disco efímero; no se contrató infraestructura ni se provisionó un volumen.
+- Continuación: el usuario autorizó publicar y completar lo pendiente excepto el video. GitHub CLI está autenticado como GaryPoui y `VITE_API_URL` apunta a Render. Se preparó `render.persistent.yaml` (Starter + disco 1 GB + `/var/data/brickwell.sqlite`) sin activarlo: requiere aprobación de cargos y acceso a Render. Se sugirió la conexión Render, aún no confirmada. Computer Use se detuvo por no poder verificar la URL de Chrome; no volver a intentar UI en ese turno. Verificar publicación real antes de afirmar despliegue.
+- Mantener explícitas las limitaciones: tarifas/plano de referencia, pago en el local, avisos internos, historial de combos reservados (no ventas independientes en barra).
+
+### Verificación de este trabajo
+
+- Backend: 12 pruebas aprobadas, con validaciones, permisos, conflictos, estados, cupo concurrente, recordatorios y una prueba entre procesos que conserva usuario/sesión/reserva además de secuencias.
+- Frontend: 10 unitarias aprobadas; lint sin advertencias, comprobación de formato y build aprobados. El build conserva el aviso de tamaño del módulo Three.js cargado bajo demanda.
+- Suite E2E final: **21/21 aprobadas**. Incluye cancelación, gestión, calendario/entradas, perfil, políticas, errores/reintentos y comprobaciones de accesibilidad y desbordes. Se corrigió una revocación de sesión involuntaria al guardar el perfil y se verificó su conservación al recargar. Capturas en `frontend/test-results` (ignoradas por Git).
+
 ## Actualización del 16/11/2026
 
 Esta sección prevalece sobre las notas históricas inferiores cuando haya diferencias.

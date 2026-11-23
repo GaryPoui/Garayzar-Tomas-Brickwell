@@ -27,6 +27,7 @@ import {
   DeleteReservation,
   ReservationDetail,
   ValidateReservation,
+  CancelReservation,
 } from '../components/ReservationDialogs.jsx'
 import { useAuth, useReservas } from '../utils/applicationContext.js'
 import { ESTADOS, fechaLegible, fechaLocal, filtrarReservas, moneda } from '../utils/reservas.js'
@@ -80,12 +81,13 @@ function Summary({ reservas, unavailable }) {
 }
 
 export default function ReservasPage({ agenda = false }) {
-  const { staff, bookingPath } = useAuth()
+  const { staff, admin, bookingPath } = useAuth()
   const { reservas, loading, error, refresh } = useReservas()
   const [params, setParams] = useSearchParams()
   const [detailId, setDetailId] = useState(null)
   const [toDelete, setToDelete] = useState(null)
   const [toValidate, setToValidate] = useState(null)
+  const [toCancel, setToCancel] = useState(null)
   const search = params.get('buscar') || ''
   const estado = params.get('estado') || ''
   const fecha = params.get('fecha') || ''
@@ -137,7 +139,7 @@ export default function ReservasPage({ agenda = false }) {
           {staff ? 'Nueva reserva' : 'Reservar'}
         </Link>
       </PageHeading>
-      {!agenda && <Summary reservas={reservas} unavailable={loading || Boolean(error)} />}
+      {!agenda && admin && <Summary reservas={reservas} unavailable={loading || Boolean(error)} />}
       {!agenda && <ReservationOptions />}
       {agenda && staff && (
         <div className="agenda-banner">
@@ -265,6 +267,7 @@ export default function ReservasPage({ agenda = false }) {
                     onDetail={setDetailId}
                     onDelete={setToDelete}
                     onValidate={setToValidate}
+                    onCancel={setToCancel}
                   />
                 </section>
               ))
@@ -274,6 +277,7 @@ export default function ReservasPage({ agenda = false }) {
                 onDetail={setDetailId}
                 onDelete={setToDelete}
                 onValidate={setToValidate}
+                onCancel={setToCancel}
               />
             )}
             <footer className="pagination">
@@ -306,7 +310,8 @@ export default function ReservasPage({ agenda = false }) {
       {detailId !== null && (
         <ReservationDetail key={detailId} id={detailId} onClose={() => setDetailId(null)} />
       )}
-      {staff && toDelete && (
+      {toCancel && <CancelReservation reserva={toCancel} onClose={() => setToCancel(null)} />}
+      {admin && toDelete && (
         <DeleteReservation reserva={toDelete} onClose={() => setToDelete(null)} />
       )}
       {staff && toValidate && (

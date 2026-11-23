@@ -1,13 +1,14 @@
-class Usuario {
-    constructor(id, nombre, email, contraseña, fechaNacimiento, telefono, rol) {
-        this.id = id;
-        this.nombre = nombre;
-        this.email = email;
-        this.contraseña = contraseña;
-        this.fechaNacimiento = fechaNacimiento;
-        this.telefono = telefono;
-        this.rol = rol;
-    }
+export default class Usuario {
+  constructor({
+    nombre,
+    email,
+    salt,
+    hash,
+    rol,
+    fechaNacimiento = null,
+    telefono = '',
+    activo = true,
+  }) {
+    Object.assign(this, { nombre, email, salt, hash, rol, fechaNacimiento, telefono, activo })
+  }
 }
-
-export default Usuario;

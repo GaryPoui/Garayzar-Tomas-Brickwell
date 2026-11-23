@@ -1,28 +1,28 @@
 class AppError extends Error {
-    constructor(message, statusCode) {
-        super(message);
-        this.name = this.constructor.name;
-        this.statusCode = statusCode;
-        Error.captureStackTrace(this, this.constructor);
-    }
+  constructor(message, statusCode) {
+    super(message)
+    this.name = this.constructor.name
+    this.statusCode = statusCode
+    Error.captureStackTrace(this, this.constructor)
+  }
 }
 
 export class BadRequestError extends AppError {
-    constructor(message) {
-        super(message, 400);
-    }
+  constructor(message) {
+    super(message, 400)
+  }
 }
 
 export class NotFoundError extends AppError {
-    constructor(message) {
-        super(message, 404);
-    }
+  constructor(message) {
+    super(message, 404)
+  }
 }
 
 export class ConflictError extends AppError {
-    constructor(message) {
-        super(message, 409);
-    }
+  constructor(message) {
+    super(message, 409)
+  }
 }
 
-export default AppError;
+export default AppError

@@ -13,14 +13,22 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'PORT=3101 npm --prefix ../backend start',
-      env: { ADMIN_EMAIL: 'admin-e2e@example.com', ADMIN_PASSWORD: 'Admin-e2e-testing-123' },
+      command: 'npm --prefix ../backend start',
+      env: {
+        NODE_ENV: 'test',
+        PORT: '3101',
+        DATABASE_PATH: ':memory:',
+        ADMIN_EMAIL: 'admin-e2e@example.com',
+        ADMIN_PASSWORD: 'Admin-e2e-testing-123',
+        RECEPCION_EMAIL: 'recepcion-e2e@example.com',
+        RECEPCION_PASSWORD: 'Recepcion-e2e-testing-123',
+      },
       url: 'http://127.0.0.1:3101',
       reuseExistingServer: false,
     },
     {
-      command:
-        'API_PROXY_TARGET=http://127.0.0.1:3101 npm run dev -- --host 127.0.0.1 --port 5175 --strictPort',
+      command: 'npm run dev -- --host 127.0.0.1 --port 5175 --strictPort',
+      env: { API_PROXY_TARGET: 'http://127.0.0.1:3101' },
       url: 'http://127.0.0.1:5175/Garayzar-Tomas-Brickwell/',
       reuseExistingServer: false,
     },

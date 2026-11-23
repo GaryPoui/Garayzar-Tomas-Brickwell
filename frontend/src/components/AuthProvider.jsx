@@ -60,12 +60,25 @@ export function AuthProvider({ children }) {
   }
 
   const staff = ['ADMIN', 'RECEPCIONISTA'].includes(user?.rol)
+  const admin = user?.rol === 'ADMIN'
   const home = staff ? '/reservas' : '/agenda'
   const bookingPath = staff ? '/reservas/nueva' : '/reservar'
 
   return (
     <AuthContext.Provider
-      value={{ user, staff, home, bookingPath, loading, error, authenticate, logout, retry }}
+      value={{
+        user,
+        staff,
+        admin,
+        home,
+        bookingPath,
+        loading,
+        error,
+        authenticate,
+        logout,
+        retry,
+        updateProfile: setUser,
+      }}
     >
       {children}
     </AuthContext.Provider>
@@ -96,4 +109,9 @@ export function RequireStaff({ children, booking = false }) {
   ) : (
     <Navigate to={`${booking ? bookingPath : home}${location.search}`} replace />
   )
+}
+
+export function RequireAdmin({ children }) {
+  const { admin, home } = useAuth()
+  return admin ? children : <Navigate to={home} replace />
 }

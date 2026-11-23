@@ -1,6 +1,21 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
+test('carta de la API con error y reintento sin productos ficticios', async ({ page }) => {
+  await page.route('**/api/carta', (route) =>
+    route.fulfill({
+      status: 503,
+      json: { success: false, message: 'No se pudo consultar la carta.' },
+    }),
+  )
+  await page.goto('./')
+  await expect(page.getByRole('alert')).toContainText('No se pudo consultar la carta.')
+  await expect(page.locator('.menu-book')).toHaveCount(0)
+  await page.unroute('**/api/carta')
+  await page.getByRole('button', { name: 'Reintentar carta' }).click()
+  await expect(page.getByRole('button', { name: 'Abrir carta de tragos' })).toBeVisible()
+})
+
 async function wordmarkPixels(page) {
   const screenshot = await page.locator('.hero-wordmark canvas').screenshot({
     style: '.night-header { visibility: hidden !important; }',

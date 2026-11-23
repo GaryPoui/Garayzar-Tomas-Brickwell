@@ -1,10 +1,6 @@
-class Administrador {
-    constructor(id, nombre, email, contraseña) {
-        this.id = id;
-        this.nombre = nombre;
-        this.email = email;
-        this.contraseña = contraseña;
-    }
+import Usuario from './Usuario.js'
+export default class Administrador extends Usuario {
+  constructor(data) {
+    super({ ...data, rol: 'ADMIN' })
+  }
 }
-
-export default Administrador;

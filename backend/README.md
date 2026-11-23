@@ -1,155 +1,131 @@
-# Backend Brickell's — Entrega MVC
+# API de BRICKWEEL
 
-Esta carpeta contiene la implementación del backend solicitada para la segunda entrega.
+API REST Express con SQLite incluido en Node.js. Requiere Node 22.13 o superior.
 
-## Arquitectura
-
-```text
-backend/src/
-├── controllers
-├── services
-├── repositories
-├── models
-├── routes
-├── middlewares
-├── responses
-├── exceptions
-├── enums
-└── utils
-```
-
-La entidad principal utilizada para el CRUD es `Reserva`.
-
-## Instalación
-
-Desde la carpeta `backend`:
+## Arranque y configuración
 
 ```bash
-npm install
+npm ci
+npm run demo
+```
+
+El modo de demostración crea las cuentas indicadas en el README principal y limita la escucha a localhost. Para el arranque habitual:
+
+```bash
 npm start
 ```
 
-Servidor por defecto:
+Se carga `backend/.env` si existe. La plantilla `backend/.env.example` contiene las variables admitidas:
 
-```text
-http://localhost:3000
-```
+- `PORT`: 3000 por defecto.
+- `HOST`: dirección de escucha; modo demo usa 127.0.0.1.
+- `DATABASE_PATH`: archivo SQLite; por defecto `backend/data/brickwell.sqlite`. Usar un volumen persistente en un hosting. `:memory:` es para pruebas.
+- `CORS_ORIGIN`: orígenes permitidos separados por comas.
+- `ADMIN_EMAIL`, `ADMIN_PASSWORD`: pareja opcional para crear una cuenta ADMIN si su email todavía no existe.
+- `RECEPCION_EMAIL`, `RECEPCION_PASSWORD`: pareja opcional equivalente para recepción.
+
+La configuración inicial crea cuentas solamente la primera vez; no modifica ni eleva una cuenta preexistente con el mismo email. Las cuentas posteriores se gestionan desde Usuarios. No versionar `.env` ni la base. En producción usar credenciales privadas.
+
+## Arquitectura
+
+- `routes`: URL, método y middlewares de autorización.
+- `controllers`: traducen la solicitud y utilizan el formato de respuestas común mediante `handler`.
+- `services`: validaciones, permisos de negocio, precios, disponibilidad, estados y transacciones.
+- `repositories`: lectura y escritura de entidades en SQLite; `RecordRepository` comparte las operaciones de almacenamiento.
+- `models`: entidades de dominio; usuarios diferenciados por perfil, reservas, eventos, flyers y entradas.
+- `middlewares`: autenticación, límite de intentos, errores y rutas inexistentes.
+- `exceptions`: errores con estado HTTP.
+- `responses`: respuestas HTTP consistentes.
+- `database.js`: conexión, esquema, secuencias e índices únicos. Las reservas por mesa/fecha y cliente/fecha y las entradas por cliente/evento se protegen también en la base.
+
+SQLite almacena documentos JSON validados en una tabla con claves de colección e identificador. Las secuencias persisten y no reutilizan IDs eliminados. Las operaciones que afectan disponibilidad utilizan `BEGIN IMMEDIATE` y rollback para que las verificaciones y las escrituras sean indivisibles.
 
 ## Endpoints
 
-Base:
+Todas las rutas siguientes llevan el prefijo `/api`.
 
-```text
-/api/reservas
-```
+| Método y ruta                        | Acceso y operación                                                                             |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| POST `/auth/registro`                | Público. Nombre, email, password, fechaNacimiento y telefono. Siempre crea CLIENTE.            |
+| POST `/auth/login`                   | Público. Email y password.                                                                     |
+| GET `/auth/sesion`                   | Sesión actual.                                                                                 |
+| POST `/auth/logout`                  | Revoca la sesión actual.                                                                       |
+| PUT `/perfil`                        | Edita nombre, fechaNacimiento y telefono propios.                                              |
+| GET `/catalogo?fecha=YYYY-MM-DD`     | Público. Sectores habilitados, mesas y combos activos con disponibilidad por noche.            |
+| GET `/catalogo?fecha=...&excluir=ID` | Personal autenticado, para editar una reserva existente.                                       |
+| GET `/carta`                         | Público. Tragos disponibles y combos con precios del catálogo.                                 |
+| GET `/reservas`                      | Cliente: propias. Personal: todas.                                                             |
+| GET `/reservas/:id`                  | Detalle respetando titularidad.                                                                |
+| POST `/reservas`                     | Cliente reserva para sí. Personal selecciona un cliente registrado mediante `cliente`.         |
+| PUT `/reservas/:id`                  | Personal: datos, anticipo, descuento, notas y transición permitida de estado.                  |
+| DELETE `/reservas/:id`               | Cliente: cancela la propia sin borrarla. ADMIN: elimina definitivamente. Recepción: prohibido. |
+| GET `/eventos`                       | Público. Eventos publicados y activos, con disponibilidad.                                     |
+| GET `/eventos/:id`                   | Público. Detalle del evento publicado.                                                         |
+| POST `/eventos/:id/entradas`         | CLIENTE. Solicita una entrada; precio e identidad desde el servidor.                           |
+| GET `/entradas`                      | Cliente: propias. Personal: todas.                                                             |
+| PUT `/entradas/:id`                  | Cliente: cancelar. Personal: acreditar pago, registrar ingreso o cancelar.                     |
+| GET `/historial`                     | Historial propio de reservas y entradas.                                                       |
+| GET `/avisos`                        | Avisos propios. Genera recordatorios pendientes de forma idempotente.                          |
+| PUT `/avisos/:id`                    | Marca un aviso propio como leído.                                                              |
+| GET `/clientes`                      | Personal: clientes activos para registrar reservas a su nombre.                                |
+| GET `/clientes/:id/historial`        | ADMIN. Historial del cliente.                                                                  |
+| GET `/gestion/catalogo/:tipo`        | Personal. `tipo`: sectores, paquetes o carta.                                                  |
+| POST `/gestion/catalogo/:tipo`       | ADMIN. Alta. Un sector nuevo genera cuatro mesas.                                              |
+| PUT `/gestion/catalogo/:tipo/:id`    | ADMIN: edición. Recepción: solo `disponible` en carta.                                         |
+| DELETE `/gestion/catalogo/:tipo/:id` | ADMIN. Baja si no rompe el historial.                                                          |
+| GET/POST `/gestion/eventos`          | ADMIN. Listado completo o creación como borrador.                                              |
+| PUT/DELETE `/gestion/eventos/:id`    | ADMIN. Edición o eliminación permitida por estado e historial.                                 |
+| GET/POST `/gestion/usuarios`         | ADMIN. Listado o alta con rol validado.                                                        |
+| PUT `/gestion/usuarios/:id`          | ADMIN. Perfil, rol o baja lógica `activo: false`; revoca sesiones cuando corresponde.          |
+| GET `/gestion/reportes`              | ADMIN. Importes e historial de clientes.                                                       |
+| GET `/configuracion`                 | Público. Política vigente de cancelación y reembolsos.                                         |
+| PUT `/gestion/configuracion`         | ADMIN. Configura política; anticipación mínima de 2 a 168 horas.                               |
 
-- `GET /api/reservas` — Cliente: sus reservas. Personal: todas las reservas.
-- `GET /api/reservas/:id` — Obtener una reserva por ID.
-- `POST /api/reservas` — Crear una reserva.
-- `PUT /api/reservas/:id` — Modificar o validar una reserva; solo personal.
-- `DELETE /api/reservas/:id` — Eliminar una reserva; solo personal.
-- `GET /api/catalogo` — Sectores, mesas y paquetes; sin fecha, no confirma disponibilidad.
-- `GET /api/catalogo?fecha=2026-12-20&excluir=1` — Disponibilidad por noche; `excluir` permite editar la propia reserva.
-
-## Autenticación
-
-- `POST /api/auth/registro`: `{ "nombre": "Tu nombre", "email": "nombre@example.com", "password": "una-clave-de-10-caracteres" }`.
-- `POST /api/auth/login`: `{ "email": "nombre@example.com", "password": "una-clave-de-10-caracteres" }`.
-- Ambas devuelven `{ success: true, data: { user: { id, nombre, email, rol }, token } }`.
-- `GET /api/auth/sesion`: devuelve el usuario de la sesión.
-- `POST /api/auth/logout`: revoca la sesión actual.
-
-Las operaciones de reservas, sesión y cierre requieren `Authorization: Bearer <token>`. Sin una sesión válida responden 401. Al crear, el servidor obtiene `cliente` exclusivamente de la sesión e ignora cualquier ID enviado. Un `CLIENTE` solo puede listar o consultar sus reservas; consultar una ajena responde 404. Modificar, validar o eliminar exige `ADMIN` o `RECEPCIONISTA` y devuelve 403 a clientes, incluso si la reserva es propia. El personal puede consultar y gestionar todas las reservas; no puede cambiar su propietario. El catálogo sigue siendo público.
-
-Validar una pendiente consiste en `PUT /api/reservas/:id` con `{ "estado": "CONFIRMADA" }`, manteniendo las validaciones de disponibilidad existentes. El registro público siempre asigna `CLIENTE`, independientemente del rol enviado en el cuerpo.
-
-Contraseñas de 10 a 128 caracteres, con scrypt y sal aleatoria. Tokens opacos aleatorios de 256 bits, almacenados como hash, con vencimiento a los siete días y revocación al salir. Registro y login tienen un límite compartido de 30 solicitudes por IP cada 15 minutos. Usuarios y sesiones se guardan en memoria: no hay persistencia durable, recuperación de contraseña ni verificación de email.
-
-### Cuentas de personal
-
-La API crea las cuentas de personal al arrancar si se configuran sus variables de entorno:
-
-- `ADMIN_EMAIL` y `ADMIN_PASSWORD`: cuenta con rol `ADMIN`.
-- `RECEPCION_EMAIL` y `RECEPCION_PASSWORD`: cuenta con rol `RECEPCIONISTA`.
-
-Cada pareja es opcional, pero ambas variables deben definirse juntas. Se aplica la misma validación de email y contraseña del registro. No hay un administrador con contraseña fija ni un endpoint público para elevar permisos. Configurar estos valores en el entorno local o en el panel privado del proveedor, sin versionar contraseñas. Como el almacenamiento sigue en memoria, las cuentas configuradas se recrean al reiniciar, pero las reservas se pierden.
-
-## Reservar mesa y combos
+Ejemplo de registro:
 
 ```json
 {
-  "fecha": "2026-12-20",
-  "horario": "23:30",
-  "mesa": 1,
-  "personas": 4,
-  "combos": [{ "id": 2, "cantidad": 2 }],
-  "anticipo": 0
+  "nombre": "Cliente de ejemplo",
+  "email": "cliente@example.com",
+  "password": "Una-clave-segura-123",
+  "fechaNacimiento": "2000-01-01",
+  "telefono": "2262551234"
 }
 ```
 
-Los IDs se obtienen del catálogo. La API calcula sector, paquete y precio total desde la mesa y los combos; no acepta un total manipulado. Guarda una descripción de la mesa y un desglose de combos con precios unitarios y subtotales. Las cantidades admitidas son de 1 a 10 por combo, sin duplicados. Omitir combos o enviar `[]` reserva solamente la mesa.
+Registro/login responden `{ "success": true, "data": { "user": {}, "token": "..." } }`. Enviar `Authorization: Bearer <token>` para operaciones privadas. Tokens aleatorios almacenados como hash, duración de siete días y revocación al salir. Contraseñas con scrypt, sal aleatoria y verificación temporal constante. Registro/login admiten 30 solicitudes por IP cada 15 minutos; las pruebas aisladas usan un límite mayor con `NODE_ENV=test`.
 
-Una mesa admite una reserva por fecha con estado `PENDIENTE`, `CONFIRMADA` o `ACTIVA`, sin distinguir turnos horarios. Un conflicto devuelve HTTP 409. Cancelar, finalizar, eliminar o cambiar de mesa/fecha libera la anterior. Se valida capacidad, fecha real desde mañana, horario, identificadores e importes finitos; el anticipo no puede superar el total. La edición de una reserva pasada sigue siendo posible si no se reenvía su fecha.
+Ejemplo de reserva de cliente:
 
-El catálogo contiene tarifas de referencia y un plano orientativo, no confirmados por el local. No hay cobro ni persistencia durable. El CRUD anterior sin `mesa` sigue disponible para compatibilidad con la Entrega 2, también protegido por sesión y propiedad.
+```json
+{
+  "fecha": "2099-12-20",
+  "horario": "23:30",
+  "mesa": 1,
+  "personas": 4,
+  "combos": [{ "id": 2, "cantidad": 2 }]
+}
+```
 
-## Hosting y CORS
+No enviar precio, cliente, anticipo ni descuento desde una cuenta de cliente. El servidor asigna la titularidad y calcula el precio. El personal puede seleccionar `cliente` y registrar `anticipo` o `descuento` (porcentaje de 0 a 100). No se procesa un pago electrónico.
 
-`CORS_ORIGIN` acepta una lista de orígenes separados por comas. Por defecto permite GitHub Pages y desarrollo en el puerto 5173. CORS no sustituye autenticación ni protege la API de accesos fuera del navegador. `PORT` lo asigna el proveedor de hosting.
+## Validaciones y estados
 
-API desplegada en `https://brickwell-api.onrender.com`, servicio gratuito `brickwell-api`, raíz `backend`, Node 22, build `npm ci` y arranque `npm start`. La raíz del repositorio incluye `render.yaml` para recrear la configuración. Las peticiones iniciales pueden demorarse mientras el servicio sale de reposo; el frontend público admite hasta 90 segundos. El almacenamiento en memoria y las tarifas orientativas limitan esta publicación a una demostración.
+Se validan objetos, tipos numéricos estrictos, fechas reales, email único, teléfono de 8 a 15 dígitos, edad mínima de 16 años y máxima de 120, contraseña de 10 a 128 caracteres con mayúscula, minúscula y número, existencia de entidades, capacidad, cantidades, precios y permisos. Se rechazan booleanos donde se espera un número. Un JSON malformado devuelve 400.
+
+Las reservas no se superponen por mesa ni por cliente en una fecha. El check-in solo se registra el día reservado. Los estados finales son inmutables. El precio acordado queda guardado en la reserva; solo cambia al modificar su selección o aplicar un descuento autorizado.
+
+Una entrada con precio queda `PENDIENTE_PAGO`; el personal registra `CONFIRMADA` tras recibir el dinero. Una gratuita se confirma automáticamente. `USADA` registra un ingreso único al evento del día. Cancelar libera el cupo. Cancelar un evento cancela sus entradas y notifica a los titulares; los reembolsos se coordinan con el local.
+
+Los avisos son internos y persistentes. El servidor busca recordatorios cada minuto mientras está ejecutándose y también al consultar avisos. No envía emails ni SMS y no genera recordatorios mientras el proceso está suspendido.
+
+## Respuestas y pruebas
+
+Éxito: `{ "success": true, "data": ... }`. Error: `{ "success": false, "message": "Mensaje claro" }`. Códigos: 400 datos inválidos, 401 sesión inválida, 403 permisos insuficientes, 404 inexistente/no perteneciente, 409 conflicto de negocio, 413 cuerpo demasiado grande, 429 límite de intentos y 500 error inesperado.
 
 ```bash
 npm test
 npm audit --omit=dev
 ```
 
-## Ejemplo para crear una reserva
-
-La fecha debe ser como mínimo el día siguiente al actual.
-
-```json
-{
-  "fecha": "2026-12-20",
-  "horario": "23:30",
-  "sector": 2,
-  "paquete": 1,
-  "precioTotal": 50000,
-  "anticipo": 15000
-}
-```
-
-El estado inicial se asigna automáticamente como `PENDIENTE`.
-
-## Formato de respuestas
-
-Respuesta exitosa:
-
-```json
-{
-  "success": true,
-  "data": {}
-}
-```
-
-Respuesta de error:
-
-```json
-{
-  "success": false,
-  "message": "La reserva no existe."
-}
-```
-
-## Persistencia
-
-La información se almacena temporalmente en memoria mediante un array dentro de `ReservaRepository.js`.
-Al reiniciar el servidor, las cuentas, sesiones y reservas se eliminan. La autenticación no reemplaza una base de datos persistente.
-
-## Manejo de errores
-
-Los mensajes están centralizados en `enums/Messages.js`.
-
-Los errores personalizados están definidos en `exceptions/AppError.js`.
-
-El middleware `middlewares/errorHandler.js` centraliza todas las respuestas de error.
+Las pruebas usan SQLite en memoria salvo la prueba de reinicio, que utiliza una base temporal fuera del proyecto y la elimina al terminar. No modifican la base normal.

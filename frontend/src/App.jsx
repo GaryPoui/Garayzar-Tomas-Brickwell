@@ -7,7 +7,23 @@ import ReservasPage from './pages/ReservasPage.jsx'
 import ReservaFormPage from './pages/ReservaFormPage.jsx'
 import HomePage from './pages/HomePage.jsx'
 import AuthPage from './pages/AuthPage.jsx'
-import { AuthProvider, RequireAuth, RequireStaff } from './components/AuthProvider.jsx'
+import {
+  AuthProvider,
+  RequireAuth,
+  RequireStaff,
+  RequireAdmin,
+} from './components/AuthProvider.jsx'
+import EventosPage from './pages/EventosPage.jsx'
+import GestionPage from './pages/GestionPage.jsx'
+import {
+  PerfilPage,
+  AvisosPage,
+  HistorialPage,
+  EntradasPage,
+  ReportesPage,
+  ConfiguracionPage,
+} from './pages/CuentaPage.jsx'
+import './styles/negocio.css'
 
 export default function App() {
   return (
@@ -17,6 +33,14 @@ export default function App() {
           <Route index element={<HomePage />} />
           <Route path="login" element={<AuthPage key="login" />} />
           <Route path="registro" element={<AuthPage key="registro" register />} />
+          <Route
+            path="eventos"
+            element={
+              <NotificationProvider>
+                <EventosPage />
+              </NotificationProvider>
+            }
+          />
           <Route
             element={
               <RequireAuth>
@@ -38,6 +62,50 @@ export default function App() {
             />
             <Route path="agenda" element={<ReservasPage key="agenda" agenda />} />
             <Route path="reservar" element={<ReservaFormPage key="reservar" />} />
+            <Route path="perfil" element={<PerfilPage />} />
+            <Route path="avisos" element={<AvisosPage />} />
+            <Route path="historial" element={<HistorialPage />} />
+            <Route path="entradas" element={<EntradasPage />} />
+            <Route
+              path="gestion/:tipo"
+              element={
+                <RequireAdmin>
+                  <GestionPage />
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="carta-operativa"
+              element={
+                <RequireStaff>
+                  <GestionPage carta />
+                </RequireStaff>
+              }
+            />
+            <Route
+              path="reportes"
+              element={
+                <RequireAdmin>
+                  <ReportesPage />
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="configuracion"
+              element={
+                <RequireAdmin>
+                  <ConfiguracionPage />
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="clientes/:id/historial"
+              element={
+                <RequireAdmin>
+                  <HistorialPage />
+                </RequireAdmin>
+              }
+            />
             <Route
               path="reservas/nueva"
               element={

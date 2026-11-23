@@ -14,20 +14,33 @@ import { useState } from 'react'
 import '../styles/auth.css'
 
 export default function Layout() {
-  const { user, staff, bookingPath, logout } = useAuth()
+  const { user, staff, admin, bookingPath, logout } = useAuth()
   const [logoutBusy, setLogoutBusy] = useState(false)
   const { pathname } = useLocation()
   const main = useRef(null)
+  const titles = {
+    '/perfil': 'Mi perfil',
+    '/avisos': 'Mis avisos',
+    '/historial': 'Mi historial',
+    '/entradas': 'Entradas',
+    '/reportes': 'Reportes',
+    '/carta-operativa': 'Carta operativa',
+  }
   const section =
-    pathname.includes('nueva') || pathname === '/reservar'
-      ? staff
-        ? 'Nueva reserva'
-        : 'Reservar'
-      : pathname.includes('editar')
-        ? 'Editar reserva'
-        : pathname.includes('agenda')
-          ? 'Agenda'
-          : 'Reservas'
+    titles[pathname] ||
+    (pathname.startsWith('/gestion/')
+      ? 'Administración'
+      : pathname.includes('/historial')
+        ? 'Historial del cliente'
+        : pathname.includes('nueva') || pathname === '/reservar'
+          ? staff
+            ? 'Nueva reserva'
+            : 'Reservar'
+          : pathname.includes('editar')
+            ? 'Editar reserva'
+            : pathname.includes('agenda')
+              ? 'Agenda'
+              : 'Reservas')
   useEffect(() => {
     main.current?.focus({ preventScroll: true })
     document.title = `${section} | BRICKWEEL`
@@ -103,6 +116,20 @@ export default function Layout() {
             </button>
           </div>
         </div>
+        <nav className="extra-navigation workspace-navigation" aria-label="Más funciones">
+          <NavLink to="/eventos">Eventos</NavLink>
+          <NavLink to="/entradas">{staff ? 'Gestionar entradas' : 'Mis entradas'}</NavLink>
+          {!staff && <NavLink to="/historial">Mi historial</NavLink>}
+          <NavLink to="/avisos">Mis avisos</NavLink>
+          <NavLink to="/perfil">Mi perfil</NavLink>
+          {staff && (
+            <NavLink to="/carta-operativa">
+              {admin ? 'Carta y disponibilidad' : 'Disponibilidad de carta'}
+            </NavLink>
+          )}
+          {admin && <NavLink to="/gestion/eventos">Administrar negocio</NavLink>}
+          {admin && <NavLink to="/configuracion">Políticas de cancelación</NavLink>}
+        </nav>
         <main id="contenido" ref={main} tabIndex={-1}>
           <Outlet />
         </main>
