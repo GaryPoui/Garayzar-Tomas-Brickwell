@@ -27,17 +27,17 @@ const same = (field, a, b) =>
           b.map((item) => ({ id: item?.id, cantidad: item?.cantidad })).sort((x, y) => x.id - y.id),
         )
     : a === b
-function titular(id) {
-  const user = Usuarios.findById(id)
+async function titular(id) {
+  const user = await Usuarios.findById(id)
   if (!user?.activo || user.rol !== 'CLIENTE')
     throw new BadRequestError('Seleccioná un cliente activo.')
   age(user.fechaNacimiento)
   return user
 }
-function duplicada(data, excluir) {
+async function duplicada(data, excluir) {
   if (
     ['PENDIENTE', 'CONFIRMADA', 'ACTIVA'].includes(data.estado) &&
-    Reservas.findAll().some(
+    (await Reservas.findAll()).some(
       (item) =>
         item.id !== excluir &&
         item.cliente === data.cliente &&
@@ -54,43 +54,45 @@ function importes(data) {
   return { descuento, precioTotal, anticipo }
 }
 class ReservaService {
-  presentar(item, user) {
+  async presentar(item, user) {
     if (isStaff(user)) return item
-    const { notas, ...publico } = item
+    const { notas: _notas, ...publico } = item
     return {
       ...publico,
       puedeCancelar:
         ['PENDIENTE', 'CONFIRMADA'].includes(item.estado) &&
         instant(item.fecha, item.horario) - Date.now() >=
-          Configuracion.obtener().cancelacionHoras * 60 * 60 * 1000,
+          (await Configuracion.obtener()).cancelacionHoras * 60 * 60 * 1000,
     }
   }
-  obtenerTodas(user) {
-    return Reservas.findAll()
-      .filter((item) => isStaff(user) || item.cliente === user.id)
-      .map((item) => this.presentar(item, user))
+  async obtenerTodas(user) {
+    return Promise.all(
+      (await Reservas.findAll())
+        .filter((item) => isStaff(user) || item.cliente === user.id)
+        .map((item) => this.presentar(item, user)),
+    )
   }
-  obtenerPorId(id) {
-    const item = Reservas.findById(id)
+  async obtenerPorId(id) {
+    const item = await Reservas.findById(id)
     if (!item) throw new NotFoundError('La reserva no existe.')
     return item
   }
-  obtenerPropia(id, cliente) {
-    const item = this.obtenerPorId(id)
+  async obtenerPropia(id, cliente) {
+    const item = await this.obtenerPorId(id)
     if (item.cliente !== cliente) throw new NotFoundError('La reserva no existe.')
     return item
   }
-  consultar(id, user) {
-    return this.presentar(
-      isStaff(user) ? this.obtenerPorId(id) : this.obtenerPropia(id, user.id),
+  async consultar(id, user) {
+    return await this.presentar(
+      isStaff(user) ? await this.obtenerPorId(id) : await this.obtenerPropia(id, user.id),
       user,
     )
   }
-  crear(datos, actor) {
-    return transaction(() => {
+  async crear(datos, actor) {
+    return transaction(async () => {
       object(datos)
       const cliente = isStaff(actor) ? number(datos.cliente, 'Cliente', 1, 1000000, true) : actor.id
-      titular(cliente)
+      await titular(cliente)
       date(datos.fecha)
       time(datos.horario)
       if (datos.fecha <= today()) throw new BadRequestError('La fecha debe ser a partir de mañana.')
@@ -105,11 +107,11 @@ class ReservaService {
         descuento: isStaff(actor) ? (datos.descuento ?? 0) : 0,
         anticipo: isStaff(actor) ? (datos.anticipo ?? 0) : 0,
       }
-      const seleccion = prepararMesa(data)
+      const seleccion = await prepararMesa(data)
       Object.assign(data, seleccion)
       Object.assign(data, importes(data))
-      duplicada(data)
-      const reserva = Reservas.create(
+      await duplicada(data)
+      const reserva = await Reservas.create(
         Object.assign(
           new Reserva(
             null,
@@ -127,17 +129,17 @@ class ReservaService {
           { notas: '', creada: new Date().toISOString() },
         ),
       )
-      avisar(cliente, `Tu reserva #${reserva.id} está pendiente de confirmación.`)
-      avisarPersonal(
-        `Nueva reserva #${reserva.id} de ${titular(cliente).nombre}, para el ${reserva.fecha}.`,
+      await avisar(cliente, `Tu reserva #${reserva.id} está pendiente de confirmación.`)
+      await avisarPersonal(
+        `Nueva reserva #${reserva.id} de ${(await titular(cliente)).nombre}, para el ${reserva.fecha}.`,
       )
       return reserva
     })
   }
-  modificar(id, datos, actor) {
-    return transaction(() => {
+  async modificar(id, datos, actor) {
+    return transaction(async () => {
       object(datos)
-      const current = this.obtenerPorId(id)
+      const current = await this.obtenerPorId(id)
       if (!isStaff(actor)) throw new AppError('Esta acción requiere permisos del personal.', 403)
       if (!transitions[current.estado]?.length)
         throw new ConflictError('Una reserva finalizada o cancelada no se puede modificar.')
@@ -146,7 +148,7 @@ class ReservaService {
         throw new BadRequestError('Seleccioná un estado válido.')
       if (estado !== current.estado && !transitions[current.estado].includes(estado))
         throw new ConflictError(`No se puede pasar de ${current.estado} a ${estado}.`)
-      if (estado === 'CONFIRMADA') titular(current.cliente)
+      if (estado === 'CONFIRMADA') await titular(current.cliente)
       if (estado === 'ACTIVA' && current.fecha !== today())
         throw new ConflictError('El check-in solo se puede registrar el día de la reserva.')
       const data = { ...current }
@@ -182,44 +184,48 @@ class ReservaService {
       const changed = ['mesa', 'combos'].some(
         (field) => datos[field] !== undefined && !same(field, datos[field], current[field]),
       )
-      if (changed) Object.assign(data, prepararMesa(data, current.id))
+      if (changed) Object.assign(data, await prepararMesa(data, current.id))
       else {
-        if (['PENDIENTE', 'CONFIRMADA', 'ACTIVA'].includes(estado)) prepararMesa(data, current.id)
+        if (['PENDIENTE', 'CONFIRMADA', 'ACTIVA'].includes(estado))
+          await prepararMesa(data, current.id)
         data.combos = current.combos
       }
       Object.assign(data, importes(data))
-      duplicada(data, current.id)
-      const result = Reservas.update(id, data)
+      await duplicada(data, current.id)
+      const result = await Reservas.update(id, data)
       if (estado !== current.estado)
-        avisar(current.cliente, `Tu reserva #${id} cambió a ${estado.toLowerCase()}.`)
+        await avisar(current.cliente, `Tu reserva #${id} cambió a ${estado.toLowerCase()}.`)
       return result
     })
   }
-  eliminar(id, actor) {
+  async eliminar(id, actor) {
     if (!isAdmin(actor))
       throw new AppError('Solo administración puede eliminar definitivamente una reserva.', 403)
-    return transaction(() => {
-      const item = this.obtenerPorId(id)
+    return transaction(async () => {
+      const item = await this.obtenerPorId(id)
       if (item.estado === 'ACTIVA') throw new ConflictError('Finalizá la mesa antes de eliminarla.')
-      avisar(
+      await avisar(
         item.cliente,
         `Administración eliminó la reserva #${id}. Contactá al local por cualquier anticipo.`,
       )
-      return Reservas.delete(id)
+      return await Reservas.delete(id)
     })
   }
-  cancelarPropia(id, user) {
-    return transaction(() => {
-      const reserva = this.obtenerPropia(id, user.id)
+  async cancelarPropia(id, user) {
+    return transaction(async () => {
+      const reserva = await this.obtenerPropia(id, user.id)
       if (!['PENDIENTE', 'CONFIRMADA'].includes(reserva.estado))
         throw new ConflictError('Solo podés cancelar reservas pendientes o confirmadas.')
-      const horas = Configuracion.obtener().cancelacionHoras
+      const horas = (await Configuracion.obtener()).cancelacionHoras
       if (instant(reserva.fecha, reserva.horario) - Date.now() < horas * 60 * 60 * 1000)
         throw new ConflictError(`Solo podés cancelar con al menos ${horas} horas de anticipación.`)
-      const updated = Reservas.update(id, { estado: 'CANCELADA' })
-      avisar(user.id, `Cancelaste la reserva #${id}. Cualquier reembolso se coordina con el local.`)
-      avisarPersonal(`${user.nombre} canceló la reserva #${id}.`)
-      return this.presentar(updated, user)
+      const updated = await Reservas.update(id, { estado: 'CANCELADA' })
+      await avisar(
+        user.id,
+        `Cancelaste la reserva #${id}. Cualquier reembolso se coordina con el local.`,
+      )
+      await avisarPersonal(`${user.nombre} canceló la reserva #${id}.`)
+      return await this.presentar(updated, user)
     })
   }
 }

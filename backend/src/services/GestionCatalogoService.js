@@ -4,7 +4,7 @@ import Reservas from '../repositories/ReservaRepository.js'
 import { object, text, number, boolean, today } from '../utils/validation.js'
 import { isAdmin } from '../utils/roles.js'
 import { transaction } from '../database.js'
-import AppError, { BadRequestError, ConflictError, NotFoundError } from '../exceptions/AppError.js'
+import AppError, { ConflictError, NotFoundError } from '../exceptions/AppError.js'
 const repositories = { sectores, paquetes, carta: Carta }
 const vigente = (item) =>
   item.fecha >= today() && ['PENDIENTE', 'CONFIRMADA', 'ACTIVA'].includes(item.estado)
@@ -44,36 +44,36 @@ function validar(tipo, data) {
   }
 }
 export default {
-  listar(tipo) {
+  async listar(tipo) {
     return repository(tipo).findAll()
   },
-  guardar(tipo, id, datos, user) {
-    return transaction(() => {
+  async guardar(tipo, id, datos, user) {
+    return transaction(async () => {
       object(datos)
       const repo = repository(tipo)
-      const current = id ? repo.findById(id) : null
+      const current = id ? await repo.findById(id) : null
       if (id && !current) throw new NotFoundError('El registro no existe.')
       if (!isAdmin(user)) {
         if (tipo !== 'carta' || !id || Object.keys(datos).some((key) => key !== 'disponible'))
           throw new AppError('Solo administración puede modificar el catálogo.', 403)
-        return repo.update(id, { disponible: boolean(datos.disponible, 'Disponible') })
+        return await repo.update(id, {
+          disponible: boolean(datos.disponible, 'Disponible'),
+        })
       }
       const data = validar(tipo, { ...current, ...datos })
       if (tipo === 'paquetes' && current?.id === 1 && (data.precio !== 0 || !data.activo))
         throw new ConflictError('Solo mesa debe conservarse activo y sin precio de consumición.')
       if (
-        repo
-          .findAll()
-          .some(
-            (item) =>
-              item.id !== current?.id &&
-              (item.nombre || item.name).toLocaleLowerCase() ===
-                (data.nombre || data.name).toLocaleLowerCase(),
-          )
+        (await repo.findAll()).some(
+          (item) =>
+            item.id !== current?.id &&
+            (item.nombre || item.name).toLocaleLowerCase() ===
+              (data.nombre || data.name).toLocaleLowerCase(),
+        )
       )
         throw new ConflictError('Ya existe un registro con ese nombre.')
       if (tipo === 'sectores' && current) {
-        const active = Reservas.findAll().filter(
+        const active = (await Reservas.findAll()).filter(
           (item) => item.sector === current.id && vigente(item),
         )
         if (
@@ -87,20 +87,23 @@ export default {
       if (
         tipo === 'paquetes' &&
         !data.activo &&
-        Reservas.findAll().some(
+        (await Reservas.findAll()).some(
           (item) => vigente(item) && item.combos?.some((combo) => combo.id === current?.id),
         )
       )
         throw new ConflictError('El combo está incluido en reservas vigentes.')
-      const saved = id ? repo.update(id, data) : repo.create(data)
+      const saved = id ? await repo.update(id, data) : await repo.create(data)
       if (tipo === 'sectores') {
-        const existing = mesas.findAll().filter((item) => item.sector === saved.id)
+        const existing = (await mesas.findAll()).filter((item) => item.sector === saved.id)
         if (existing.length)
           for (const mesa of existing)
-            mesas.update(mesa.id, { precio: data.precio, capacidad: data.personasPorMesa })
+            await mesas.update(mesa.id, {
+              precio: data.precio,
+              capacidad: data.personasPorMesa,
+            })
         else
           for (let columna = 1; columna <= 4; columna++)
-            mesas.create({
+            await mesas.create({
               nombre: `S${saved.id}-${columna}`,
               sector: saved.id,
               precio: data.precio,
@@ -108,7 +111,7 @@ export default {
               fila: saved.id,
               columna: columna - 1,
             })
-        return repo.update(saved.id, {
+        return await repo.update(saved.id, {
           capacidad: data.personasPorMesa * 4,
           fila: current?.fila || saved.id,
         })
@@ -116,28 +119,33 @@ export default {
       return saved
     })
   },
-  eliminar(tipo, id) {
-    return transaction(() => {
+  async eliminar(tipo, id) {
+    return transaction(async () => {
       const repo = repository(tipo)
-      const item = repo.findById(id)
+      const item = await repo.findById(id)
       if (!item) throw new NotFoundError('El registro no existe.')
       if (tipo === 'paquetes' && Number(id) === 1)
         throw new ConflictError('El paquete Solo mesa es parte del sistema.')
-      if (tipo === 'sectores' && Reservas.findAll().some((reserva) => reserva.sector === item.id))
+      if (
+        tipo === 'sectores' &&
+        (await Reservas.findAll()).some((reserva) => reserva.sector === item.id)
+      )
         throw new ConflictError(
           'El sector tiene historial de reservas. Deshabilitalo cuando no tenga reservas vigentes.',
         )
       if (
         tipo === 'paquetes' &&
-        Reservas.findAll().some((reserva) => reserva.combos?.some((combo) => combo.id === item.id))
+        (await Reservas.findAll()).some((reserva) =>
+          reserva.combos?.some((combo) => combo.id === item.id),
+        )
       )
         throw new ConflictError(
           'El combo tiene historial de reservas. Desactivalo cuando no tenga reservas vigentes.',
         )
       if (tipo === 'sectores')
-        for (const mesa of mesas.findAll().filter((mesa) => mesa.sector === item.id))
-          mesas.delete(mesa.id)
-      return repo.delete(id)
+        for (const mesa of (await mesas.findAll()).filter((mesa) => mesa.sector === item.id))
+          await mesas.delete(mesa.id)
+      return await repo.delete(id)
     })
   },
 }

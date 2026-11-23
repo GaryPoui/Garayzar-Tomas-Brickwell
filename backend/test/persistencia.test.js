@@ -18,18 +18,24 @@ test('SQLite conserva registros y secuencias al reiniciar el proceso', () => {
         '-e',
         `import Repo from ${JSON.stringify(module)};const repo=new Repo('prueba');${code}`,
       ],
-      { env: { ...process.env, DATABASE_PATH: path }, encoding: 'utf8' },
+      {
+        env: { ...process.env, DATABASE_PATH: path, DATABASE_URL: '' },
+        encoding: 'utf8',
+      },
     ).trim()
   try {
-    assert.equal(run("console.log(repo.create({nombre:'Persistente'}).id)"), '1')
-    assert.equal(run('console.log(repo.findById(1).nombre)'), 'Persistente')
-    assert.equal(run("repo.delete(1);console.log(repo.create({nombre:'Nuevo'}).id)"), '2')
+    assert.equal(run("console.log((await repo.create({nombre:'Persistente'})).id)"), '1')
+    assert.equal(run('console.log((await repo.findById(1)).nombre)'), 'Persistente')
+    assert.equal(
+      run("await repo.delete(1);console.log((await repo.create({nombre:'Nuevo'})).id)"),
+      '2',
+    )
     const saved = JSON.parse(
       run(`
       const auth = await import(${JSON.stringify(authModule)});
       const {default:reservas} = await import(${JSON.stringify(bookingModule)});
       const session = await auth.register({nombre:'Cliente persistente',email:'persistencia@example.com',password:'Persistencia-test-123',fechaNacimiento:'2000-01-01',telefono:'2262551234'});
-      const reserva = reservas.crear({fecha:'2099-12-20',horario:'23:30',mesa:1,personas:2,combos:[]},session.user);
+      const reserva = await reservas.crear({fecha:'2099-12-20',horario:'23:30',mesa:1,personas:2,combos:[]},session.user);
       console.log(JSON.stringify({token:session.token,id:reserva.id}));
     `),
     )
@@ -37,8 +43,8 @@ test('SQLite conserva registros y secuencias al reiniciar el proceso', () => {
       run(`
       const auth = await import(${JSON.stringify(authModule)});
       const {default:reservas} = await import(${JSON.stringify(bookingModule)});
-      const session = auth.authenticate(${JSON.stringify(saved.token)});
-      console.log(JSON.stringify({nombre:session.user.nombre,mesa:reservas.consultar(${saved.id},session.user).mesa}));
+      const session = await auth.authenticate(${JSON.stringify(saved.token)});
+      console.log(JSON.stringify({nombre:session.user.nombre,mesa:(await reservas.consultar(${saved.id},session.user)).mesa}));
     `),
     )
     assert.deepEqual(restored, { nombre: 'Cliente persistente', mesa: 1 })

@@ -1,56 +1,64 @@
-import { db, transaction } from '../database.js'
+import { query, transaction } from '../database.js'
+const decode = (row) =>
+  row ? (typeof row.data === 'string' ? JSON.parse(row.data) : row.data) : null
 export default class RecordRepository {
   constructor(collection) {
     this.collection = collection
   }
-  findAll() {
-    return db
-      .prepare('SELECT data FROM records WHERE collection = ? ORDER BY id')
-      .all(this.collection)
-      .map((row) => JSON.parse(row.data))
+  async findAll() {
+    return (
+      await query('SELECT data FROM records WHERE collection = $1 ORDER BY id', [this.collection])
+    ).map(decode)
   }
-  findById(id) {
+  async findById(id) {
     if (!/^\d+$/.test(String(id)) || !Number.isSafeInteger(Number(id)) || Number(id) < 1)
       return null
-    const row = db
-      .prepare('SELECT data FROM records WHERE collection = ? AND id = ?')
-      .get(this.collection, Number(id))
-    return row ? JSON.parse(row.data) : null
+    return decode(
+      (
+        await query('SELECT data FROM records WHERE collection = $1 AND id = $2', [
+          this.collection,
+          Number(id),
+        ])
+      )[0],
+    )
   }
-  create(data) {
-    return transaction(() => {
-      const { value: id } = db
-        .prepare(
-          'INSERT INTO sequences(collection, value) VALUES (?, 1) ON CONFLICT(collection) DO UPDATE SET value = value + 1 RETURNING value',
-        )
-        .get(this.collection)
+  async create(data) {
+    return transaction(async () => {
+      const [{ value: id }] = await query(
+        'INSERT INTO sequences(collection, value) VALUES ($1, 1) ON CONFLICT(collection) DO UPDATE SET value = sequences.value + 1 RETURNING value',
+        [this.collection],
+      )
       const record = { ...data, id }
-      db.prepare('INSERT INTO records(collection, id, data) VALUES (?, ?, ?)').run(
+      await query('INSERT INTO records(collection, id, data) VALUES ($1, $2, $3)', [
         this.collection,
         id,
         JSON.stringify(record),
-      )
+      ])
       return record
     })
   }
-  update(id, data) {
-    const record = this.findById(id)
-    if (!record) return null
-    const updated = { ...record, ...data, id: record.id }
-    db.prepare('UPDATE records SET data = ? WHERE collection = ? AND id = ?').run(
-      JSON.stringify(updated),
-      this.collection,
-      record.id,
-    )
-    return updated
-  }
-  delete(id) {
-    const record = this.findById(id)
-    if (record)
-      db.prepare('DELETE FROM records WHERE collection = ? AND id = ?').run(
+  async update(id, data) {
+    return transaction(async () => {
+      const record = await this.findById(id)
+      if (!record) return null
+      const updated = { ...record, ...data, id: record.id }
+      await query('UPDATE records SET data = $1 WHERE collection = $2 AND id = $3', [
+        JSON.stringify(updated),
         this.collection,
         record.id,
-      )
-    return record
+      ])
+      return updated
+    })
+  }
+  async delete(id) {
+    return transaction(async () => {
+      const record = await this.findById(id)
+      if (record)
+        await query('DELETE FROM records WHERE collection = $1 AND id = $2', [
+          this.collection,
+          record.id,
+        ])
+      return record
+    })
   }
 }

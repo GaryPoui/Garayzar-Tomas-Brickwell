@@ -18,6 +18,7 @@ export default defineConfig({
         NODE_ENV: 'test',
         PORT: '3101',
         DATABASE_PATH: ':memory:',
+        DATABASE_URL: '',
         ADMIN_EMAIL: 'admin-e2e@example.com',
         ADMIN_PASSWORD: 'Admin-e2e-testing-123',
         RECEPCION_EMAIL: 'recepcion-e2e@example.com',

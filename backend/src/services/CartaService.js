@@ -1,11 +1,10 @@
 import Carta from '../repositories/CartaRepository.js'
 import { paquetes } from '../repositories/CatalogoRepository.js'
 export default {
-  listar() {
+  async listar() {
     return [
-      ...Carta.findAll().filter((item) => item.disponible),
-      ...paquetes
-        .findAll()
+      ...(await Carta.findAll()).filter((item) => item.disponible),
+      ...(await paquetes.findAll())
         .filter((item) => item.activo && item.precio > 0)
         .map((item) => ({
           id: `combo-${item.id}`,

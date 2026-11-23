@@ -7,26 +7,36 @@ import { instant } from '../utils/validation.js'
 import { transaction } from '../database.js'
 import { NotFoundError } from '../exceptions/AppError.js'
 
-export function avisar(usuario, mensaje, clave) {
+export async function avisar(usuario, mensaje, clave) {
   if (
     clave &&
-    Notificaciones.findAll().some((item) => item.clave === clave && item.usuario === usuario)
+    (await Notificaciones.findAll()).some(
+      (item) => item.clave === clave && item.usuario === usuario,
+    )
   )
     return
-  Notificaciones.create({ usuario, mensaje, clave, fecha: new Date().toISOString(), leida: false })
+  await Notificaciones.create({
+    usuario,
+    mensaje,
+    clave,
+    fecha: new Date().toISOString(),
+    leida: false,
+  })
 }
-export function avisarPersonal(mensaje) {
-  for (const user of Usuarios.findAll().filter((user) => user.activo && isStaff(user)))
-    avisar(user.id, mensaje)
+export async function avisarPersonal(mensaje) {
+  for (const user of (await Usuarios.findAll()).filter((user) => user.activo && isStaff(user)))
+    await avisar(user.id, mensaje)
 }
-export function recordatorios() {
-  transaction(() => {
-    for (const entrada of Entradas.findAll().filter((item) => item.estado === 'CONFIRMADA')) {
-      const evento = Eventos.findById(entrada.evento)
+export async function recordatorios() {
+  return transaction(async () => {
+    for (const entrada of (await Entradas.findAll()).filter(
+      (item) => item.estado === 'CONFIRMADA',
+    )) {
+      const evento = await Eventos.findById(entrada.evento)
       if (!evento || !['PUBLICADO', 'ACTIVO'].includes(evento.estado)) continue
       const remaining = instant(evento.fecha, evento.horario) - Date.now()
       if (remaining > 0 && remaining <= 24 * 60 * 60 * 1000)
-        avisar(
+        await avisar(
           entrada.cliente,
           `Recordatorio: ${evento.nombre}, el ${evento.fecha} a las ${evento.horario}. Entrada #${entrada.id}.`,
           `recordatorio-${entrada.id}`,
@@ -35,15 +45,13 @@ export function recordatorios() {
   })
 }
 export default {
-  listar(user) {
-    recordatorios()
-    return Notificaciones.findAll()
-      .filter((item) => item.usuario === user.id)
-      .reverse()
+  async listar(user) {
+    await recordatorios()
+    return (await Notificaciones.findAll()).filter((item) => item.usuario === user.id).reverse()
   },
-  leer(id, user) {
-    const item = Notificaciones.findById(id)
+  async leer(id, user) {
+    const item = await Notificaciones.findById(id)
     if (!item || item.usuario !== user.id) throw new NotFoundError('El aviso no existe.')
-    return Notificaciones.update(id, { leida: true })
+    return await Notificaciones.update(id, { leida: true })
   },
 }

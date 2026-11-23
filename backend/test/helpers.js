@@ -1,6 +1,7 @@
 import { after } from 'node:test'
 import { randomUUID } from 'node:crypto'
 process.env.DATABASE_PATH = ':memory:'
+delete process.env.DATABASE_URL
 process.env.ADMIN_EMAIL = 'admin-test@example.com'
 process.env.ADMIN_PASSWORD = 'Admin-test-password-123'
 process.env.RECEPCION_EMAIL = 'recepcion-test@example.com'
@@ -17,7 +18,7 @@ export async function send(path, method = 'GET', body, token, raw = false) {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: body === undefined ? undefined : raw ? body : JSON.stringify(body),
+    ...(body === undefined ? {} : { body: raw ? body : JSON.stringify(body) }),
   })
   return { status: response.status, ...(await response.json()) }
 }

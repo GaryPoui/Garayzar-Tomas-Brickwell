@@ -13,38 +13,44 @@ export const eventTransitions = {
   FINALIZADO: [],
   CANCELADO: [],
 }
-const sold = (id) =>
-  Entradas.findAll().filter((item) => item.evento === id && item.estado !== 'CANCELADA').length
-export const detalleEvento = (evento) => ({
-  ...evento,
-  entradasDisponibles: Math.max(0, evento.capacidadMaxima - sold(evento.id)),
-  entradasVendidas: sold(evento.id),
-})
+const sold = async (id) =>
+  (await Entradas.findAll()).filter((item) => item.evento === id && item.estado !== 'CANCELADA')
+    .length
+export async function detalleEvento(evento) {
+  const entradasVendidas = await sold(evento.id)
+  return {
+    ...evento,
+    entradasDisponibles: Math.max(0, evento.capacidadMaxima - entradasVendidas),
+    entradasVendidas,
+  }
+}
 function optional(value, label, max = 500) {
   return text(value ?? '', label, 0, max)
 }
 function image(value) {
   const url = optional(value, 'URL de imagen', 2000)
-  if (url && (!/^https:\/\//.test(url) || !URL.canParse(url)))
+  if (url && (!url.startsWith('https://') || !URL.canParse(url)))
     throw new BadRequestError('Las imágenes deben usar una URL HTTPS válida.')
   return url
 }
 export default {
-  listar(publico = true) {
-    return Eventos.findAll()
-      .filter((item) => !publico || ['PUBLICADO', 'ACTIVO'].includes(item.estado))
-      .map(detalleEvento)
+  async listar(publico = true) {
+    return Promise.all(
+      (await Eventos.findAll())
+        .filter((item) => !publico || ['PUBLICADO', 'ACTIVO'].includes(item.estado))
+        .map(detalleEvento),
+    )
   },
-  obtener(id, publico = true) {
-    const item = Eventos.findById(id)
+  async obtener(id, publico = true) {
+    const item = await Eventos.findById(id)
     if (!item || (publico && !['PUBLICADO', 'ACTIVO'].includes(item.estado)))
       throw new NotFoundError('El evento no existe o no está publicado.')
-    return detalleEvento(item)
+    return await detalleEvento(item)
   },
-  guardar(id, datos) {
-    return transaction(() => {
+  async guardar(id, datos) {
+    return transaction(async () => {
       object(datos)
-      const original = id ? this.obtener(id, false) : null
+      const original = id ? await this.obtener(id, false) : null
       if (original && !eventTransitions[original.estado].length)
         throw new ConflictError('Un evento finalizado o cancelado no se puede modificar.')
       const data = { ...original, ...datos }
@@ -69,7 +75,7 @@ export default {
       )
         throw new BadRequestError('El evento debe comenzar en el futuro.')
       const capacidadMaxima = number(data.capacidadMaxima, 'Capacidad máxima', 1, 100000, true)
-      const count = original ? sold(original.id) : 0
+      const count = original ? await sold(original.id) : 0
       if (count > capacidadMaxima)
         throw new ConflictError('La capacidad no puede ser menor que las entradas ya emitidas.')
       if (
@@ -115,8 +121,8 @@ export default {
         flyer.promociones,
       )
       const saved = original
-        ? Eventos.update(id, { ...record, flyer: visual })
-        : Eventos.create(
+        ? await Eventos.update(id, { ...record, flyer: visual })
+        : await Eventos.create(
             Object.assign(
               new Evento(
                 null,
@@ -133,28 +139,28 @@ export default {
             ),
           )
       if (estado === 'CANCELADO')
-        for (const entrada of Entradas.findAll().filter(
+        for (const entrada of (await Entradas.findAll()).filter(
           (item) => item.evento === saved.id && item.estado !== 'CANCELADA',
         )) {
-          Entradas.update(entrada.id, { estado: 'CANCELADA' })
-          avisar(
+          await Entradas.update(entrada.id, { estado: 'CANCELADA' })
+          await avisar(
             entrada.cliente,
             `Se canceló ${saved.nombre}. Tu entrada #${entrada.id} quedó cancelada. Si abonaste, contactá al local por el reembolso.`,
           )
         }
-      return detalleEvento(saved)
+      return await detalleEvento(saved)
     })
   },
-  eliminar(id) {
-    return transaction(() => {
-      const item = this.obtener(id, false)
-      if (Entradas.findAll().some((entrada) => entrada.evento === item.id))
+  async eliminar(id) {
+    return transaction(async () => {
+      const item = await this.obtener(id, false)
+      if ((await Entradas.findAll()).some((entrada) => entrada.evento === item.id))
         throw new ConflictError(
           'El evento tiene entradas en el historial. Conservá el registro y cancelalo si corresponde.',
         )
       if (!['BORRADOR', 'CANCELADO'].includes(item.estado))
         throw new ConflictError('Solo se pueden eliminar borradores o eventos cancelados.')
-      return Eventos.delete(id)
+      return await Eventos.delete(id)
     })
   },
 }

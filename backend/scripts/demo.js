@@ -1,4 +1,5 @@
 // Explicit local demonstration mode. Normal production startup never supplies default accounts.
+delete process.env.DATABASE_URL
 process.env.HOST = '127.0.0.1'
 process.env.ADMIN_EMAIL = 'admin@brickwell.test'
 process.env.ADMIN_PASSWORD = 'Brickwell-demo-12345'

@@ -3,17 +3,17 @@ import Reservas from '../repositories/ReservaRepository.js'
 import { BadRequestError, ConflictError } from '../exceptions/AppError.js'
 import { date, number } from '../utils/validation.js'
 export const validarFechaCatalogo = (fecha) => date(fecha)
-export const mesaOcupada = (mesa, fecha, excluir) =>
-  Reservas.findAll().some(
+export const mesaOcupada = async (mesa, fecha, excluir) =>
+  (await Reservas.findAll()).some(
     (reserva) =>
       reserva.id !== Number(excluir) &&
       reserva.fecha === fecha &&
       reserva.mesa === mesa &&
       ['PENDIENTE', 'CONFIRMADA', 'ACTIVA'].includes(reserva.estado),
   )
-export function prepararMesa(datos, excluir) {
+export async function prepararMesa(datos, excluir) {
   number(datos.mesa, 'Mesa', 1, 1000000, true)
-  const catalogo = CatalogoRepository.obtener()
+  const catalogo = await CatalogoRepository.obtener()
   const mesa = catalogo.mesas.find((item) => item.id === datos.mesa)
   const sector = mesa && catalogo.sectores.find((item) => item.id === mesa.sector)
   if (!mesa || !sector?.disponible)
@@ -42,7 +42,7 @@ export function prepararMesa(datos, excluir) {
   })
   if (
     ['PENDIENTE', 'CONFIRMADA', 'ACTIVA'].includes(datos.estado || 'PENDIENTE') &&
-    mesaOcupada(mesa.id, datos.fecha, excluir)
+    (await mesaOcupada(mesa.id, datos.fecha, excluir))
   )
     throw new ConflictError(
       'Esa mesa ya está reservada para la fecha elegida. Seleccioná otra mesa.',
@@ -63,16 +63,19 @@ export function prepararMesa(datos, excluir) {
   }
 }
 export default {
-  obtener(fecha, excluir, user) {
-    const catalogo = CatalogoRepository.obtener()
+  async obtener(fecha, excluir, user) {
+    const catalogo = await CatalogoRepository.obtener()
     if (fecha !== undefined) date(fecha)
     if (
       excluir !== undefined &&
-      (!user || !['ADMIN', 'RECEPCIONISTA'].includes(user.rol) || !Reservas.findById(excluir))
+      (!user ||
+        !['ADMIN', 'RECEPCIONISTA'].includes(user.rol) ||
+        !(await Reservas.findById(excluir)))
     )
       throw new BadRequestError(
         'La exclusión de una reserva solo está disponible para el personal al editar.',
       )
+    const reservas = await Reservas.findAll()
     return {
       ...catalogo,
       sectores: catalogo.sectores.filter((item) => item.disponible),
@@ -84,7 +87,15 @@ export default {
         )
         .map((mesa) => ({
           ...mesa,
-          disponible: fecha ? !mesaOcupada(mesa.id, fecha, excluir) : null,
+          disponible: fecha
+            ? !reservas.some(
+                (item) =>
+                  item.mesa === mesa.id &&
+                  item.fecha === fecha &&
+                  item.id !== Number(excluir) &&
+                  ['PENDIENTE', 'CONFIRMADA', 'ACTIVA'].includes(item.estado),
+              )
+            : null,
         })),
     }
   },

@@ -9,31 +9,32 @@ import { transaction } from '../database.js'
 import AppError, { BadRequestError, ConflictError, NotFoundError } from '../exceptions/AppError.js'
 import Entrada from '../models/Entrada.js'
 export default {
-  listar(user) {
-    return Entradas.findAll()
+  async listar(user) {
+    const eventos = await Eventos.findAll()
+    return (await Entradas.findAll())
       .filter((item) => isStaff(user) || item.cliente === user.id)
       .map((item) => ({
         ...item,
-        detalleEvento: Eventos.findById(item.evento) || item.detalleEvento,
+        detalleEvento: eventos.find((evento) => evento.id === item.evento) || item.detalleEvento,
       }))
   },
-  comprar(id, user) {
-    return transaction(() => {
+  async comprar(id, user) {
+    return transaction(async () => {
       if (user.rol !== 'CLIENTE')
         throw new AppError('Las entradas se solicitan desde una cuenta de cliente.', 403)
       age(user.fechaNacimiento)
-      const evento = EventoService.obtener(id)
+      const evento = await EventoService.obtener(id)
       if (evento.estado !== 'PUBLICADO' || instant(evento.fecha, evento.horario) <= Date.now())
         throw new ConflictError('La venta anticipada está cerrada.')
       if (
-        Entradas.findAll().some(
+        (await Entradas.findAll()).some(
           (item) =>
             item.evento === evento.id && item.cliente === user.id && item.estado !== 'CANCELADA',
         )
       )
         throw new ConflictError('Ya tenés una entrada para este evento.')
       if (evento.entradasDisponibles <= 0) throw new ConflictError('Las entradas están agotadas.')
-      const entrada = Entradas.create(
+      const entrada = await Entradas.create(
         Object.assign(
           new Entrada(
             null,
@@ -46,23 +47,23 @@ export default {
           { codigo: randomUUID(), detalleEvento: evento },
         ),
       )
-      avisar(
+      await avisar(
         user.id,
         `Entrada #${entrada.id} para ${evento.nombre}: ${entrada.estado === 'CONFIRMADA' ? 'confirmada, sin cargo' : 'pendiente de pago en el local'}.`,
       )
-      avisarPersonal(`Nueva entrada #${entrada.id} para ${evento.nombre}.`)
+      await avisarPersonal(`Nueva entrada #${entrada.id} para ${evento.nombre}.`)
       return entrada
     })
   },
-  modificar(id, datos, user) {
-    return transaction(() => {
+  async modificar(id, datos, user) {
+    return transaction(async () => {
       object(datos)
-      const item = Entradas.findById(id)
+      const item = await Entradas.findById(id)
       if (!item || (!isStaff(user) && item.cliente !== user.id))
         throw new NotFoundError('La entrada no existe.')
       if (!['PENDIENTE_PAGO', 'CONFIRMADA'].includes(item.estado))
         throw new ConflictError('La entrada ya fue utilizada o cancelada.')
-      const evento = Eventos.findById(item.evento)
+      const evento = await Eventos.findById(item.evento)
       const estado = datos.estado
       if (!['CONFIRMADA', 'USADA', 'CANCELADA'].includes(estado))
         throw new BadRequestError('Seleccioná un estado válido.')
@@ -88,11 +89,11 @@ export default {
         instant(evento.fecha, evento.horario) - Date.now() < 2 * 60 * 60 * 1000
       )
         throw new ConflictError('Cancelá la entrada con al menos 2 horas de anticipación.')
-      const updated = Entradas.update(id, {
+      const updated = await Entradas.update(id, {
         estado,
         ...(estado === 'CONFIRMADA' ? { pagada: new Date().toISOString() } : {}),
       })
-      avisar(
+      await avisar(
         item.cliente,
         `Tu entrada #${id} para ${evento.nombre} cambió a ${estado.toLowerCase()}.`,
       )

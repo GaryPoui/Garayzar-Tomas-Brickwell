@@ -10,11 +10,11 @@ import { transaction } from '../database.js'
 import { BadRequestError, ConflictError, NotFoundError } from '../exceptions/AppError.js'
 const roles = ['CLIENTE', 'RECEPCIONISTA', 'ADMIN']
 export default {
-  listar() {
-    return Usuarios.findAll().map(publicUser)
+  async listar() {
+    return (await Usuarios.findAll()).map(publicUser)
   },
-  clientes() {
-    return Usuarios.findAll()
+  async clientes() {
+    return (await Usuarios.findAll())
       .filter((user) => user.activo && user.rol === 'CLIENTE')
       .map(publicUser)
   },
@@ -23,10 +23,10 @@ export default {
     if (!roles.includes(data.rol)) throw new BadRequestError('Seleccioná un rol válido.')
     return publicUser(await createUser(data, data.rol))
   },
-  modificar(id, data, actor, propio = false) {
-    return transaction(() => {
+  async modificar(id, data, actor, propio = false) {
+    return transaction(async () => {
       object(data)
-      const user = Usuarios.findById(id)
+      const user = await Usuarios.findById(id)
       if (!user) throw new NotFoundError('El usuario no existe.')
       if (
         !propio &&
@@ -54,7 +54,7 @@ export default {
         if (
           user.rol === 'CLIENTE' &&
           updated.rol !== 'CLIENTE' &&
-          Reservas.findAll().some(
+          (await Reservas.findAll()).some(
             (item) =>
               item.cliente === user.id &&
               ['PENDIENTE', 'CONFIRMADA', 'ACTIVA'].includes(item.estado),
@@ -65,25 +65,29 @@ export default {
           )
       }
       if (updated.activo === false || (updated.rol && updated.rol !== user.rol))
-        Sesiones.revokeUser(user.id)
-      return publicUser(Usuarios.update(id, updated))
+        await Sesiones.revokeUser(user.id)
+      return publicUser(await Usuarios.update(id, updated))
     })
   },
-  historial(id, interno = false) {
-    const user = Usuarios.findById(id)
+  async historial(id, interno = false) {
+    const eventos = await Eventos.findAll()
+    const user = await Usuarios.findById(id)
     if (!user) throw new NotFoundError('El usuario no existe.')
     return {
       usuario: publicUser(user),
-      reservas: Reservas.findAll()
+      reservas: (await Reservas.findAll())
         .filter((item) => item.cliente === user.id)
         .map((item) => {
           if (interno) return item
-          const { notas, ...publico } = item
+          const { notas: _notas, ...publico } = item
           return publico
         }),
-      entradas: Entradas.findAll()
+      entradas: (await Entradas.findAll())
         .filter((item) => item.cliente === user.id)
-        .map((item) => ({ ...item, detalleEvento: Eventos.findById(item.evento) })),
+        .map((item) => ({
+          ...item,
+          detalleEvento: eventos.find((evento) => evento.id === item.evento),
+        })),
     }
   },
 }

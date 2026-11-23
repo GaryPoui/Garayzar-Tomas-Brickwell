@@ -1,5 +1,18 @@
 # Memoria de Codex — Brickell’s
 
+## Supabase gratuito — continuación del 23/11/2026
+
+- El usuario pidió revisar la consigna completa, terminar faltantes y agregar un servicio gratuito para guardar usuarios. Confirmó crear Brickwell en la organización Supabase `srjicdqejuyefmhkqlnx`, plan Free, costo consultado USD 0/mes. Video a su cargo.
+- Proyecto Supabase creado: `uyvboesqimqanwqauzqz`, región `sa-east-1`, nombre Brickwell. Es independiente de Nuestro rincon. Esquema privado `brickwell`, tablas JSONB `records` y `sequences`, índices únicos de email/sesión/mesa/cliente/entrada y RLS. Rol dedicado `brickwell_backend`, solo CRUD; sin credenciales de administrador en React.
+- La conexión final privada está en `backend/.env`, ignorado por Git. Nunca mostrarla, versionarla ni enviarla al frontend. Se rotó después de crear el esquema; la clave inicial registrada en la migración ya no sirve. Supavisor puede tardar aproximadamente un minuto en aceptar una contraseña rotada.
+- Certificado público oficial en `backend/certs/supabase-ca.crt` y procedencia/huella en su README. PostgreSQL usa TLS con `rejectUnauthorized: true` y validación de hostname. No desactivar validaciones por el error SELF_SIGNED_CERT_IN_CHAIN.
+- Repositorios y servicios adaptados a async/await sin cambiar el contrato HTTP ni las capas MVC. `database.js` usa pg si existe DATABASE_URL y conserva SQLite local en caso contrario. AsyncLocalStorage propaga la conexión transaccional; advisory lock de PostgreSQL serializa escrituras entre instancias. Cola local evita intercalar transacciones SQLite. La demo elimina DATABASE_URL del entorno y no carga `.env`.
+- `render.yaml` sigue gratuito y declara DATABASE_URL secreto (`sync: false`). En Render, el backend nuevo exige DATABASE_URL salvo ALLOW_EPHEMERAL_SQLITE=true explícito. No hacer push del cambio antes de configurar la conexión en el servicio existente para no fallar el arranque.
+- Verificado: 15 pruebas backend, 10 frontend, lint y formato, build y 21 E2E. `npm --prefix backend run test:cloud` pasó contra Supabase con registro/login HTTP, persistencia de sesión y perfil desde otro proceso, dos procesos reservando la misma mesa (201/409), cancelación/disponibilidad, dos procesos compitiendo por un único cupo (201/409), rollback y revocación de sesión. Fixtures UUID limpiadas; no ejecutar esta prueba optativa cuando la base ya tenga usuarios reales.
+- Seguridad de Supabase: advisors sin observaciones. Datos locales anteriores no se importan automáticamente. La base local existente solo tenía catálogos y dos cuentas demo; no se migraron esas cuentas públicas a la nube.
+- Despliegue todavía pendiente al escribir esta nota. El usuario autorizó configurar Render usando el navegador y dejó Render/Supabase abiertos. Browser host no disponible; control nativo de Chrome sí funciona. La cuenta visible de Render tiene workspace Ailu y solo ailu-y-tomy (no modificar ese servicio). Se pidió al usuario abrir la cuenta que contiene brickwell-api; respondió que iba a cambiarla y preguntó cuál. Se indicó la cuenta asociada a GaryPoui/Garayzar-Tomas-Brickwell, sin afirmar un email desconocido.
+- GitHub CLI autenticado como GaryPoui al ejecutar fuera del sandbox. Dentro puede reportar token inválido por el bloqueo de red. No confundirlo con una credencial realmente vencida. Mantener todos los secretos fuera de Git.
+
 ## Actualización del 23/11/2026
 
 Esta sección reemplaza las limitaciones de las notas anteriores. El usuario pidió revisar toda la consigna y luego autorizó completar los faltantes. El video queda a su cargo. La autorización anterior de detener pruebas correspondía al cierre del 16/11 y ya no aplica a esta tarea.

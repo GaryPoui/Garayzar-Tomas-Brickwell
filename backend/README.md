@@ -1,6 +1,6 @@
 # API de BRICKWEEL
 
-API REST Express con SQLite incluido en Node.js. Requiere Node 22.13 o superior.
+API REST Express con PostgreSQL de Supabase y SQLite local incluido en Node.js. Requiere Node 22.13 o superior.
 
 ## Arranque y configuración
 
@@ -19,7 +19,9 @@ Se carga `backend/.env` si existe. La plantilla `backend/.env.example` contiene 
 
 - `PORT`: 3000 por defecto.
 - `HOST`: dirección de escucha; modo demo usa 127.0.0.1.
-- `DATABASE_PATH`: archivo SQLite; por defecto `backend/data/brickwell.sqlite`. Usar un volumen persistente en un hosting. `:memory:` es para pruebas.
+- `DATABASE_URL`: conexión privada del Session Pooler de Supabase (puerto 5432), con el rol `brickwell_backend`. Si se configura, tiene prioridad sobre SQLite. Solo backend; nunca una variable `VITE_*`.
+- `DATABASE_CA_CERT`: CA PEM opcional; por defecto se incluye el certificado oficial de Supabase. Siempre se verifica TLS.
+- `DATABASE_PATH`: archivo SQLite local; por defecto `backend/data/brickwell.sqlite`. `:memory:` es para pruebas. En Render se exige la base remota; `ALLOW_EPHEMERAL_SQLITE=true` solo permite volver explícitamente a un disco efímero.
 - `CORS_ORIGIN`: orígenes permitidos separados por comas.
 - `ADMIN_EMAIL`, `ADMIN_PASSWORD`: pareja opcional para crear una cuenta ADMIN si su email todavía no existe.
 - `RECEPCION_EMAIL`, `RECEPCION_PASSWORD`: pareja opcional equivalente para recepción.
@@ -31,14 +33,18 @@ La configuración inicial crea cuentas solamente la primera vez; no modifica ni 
 - `routes`: URL, método y middlewares de autorización.
 - `controllers`: traducen la solicitud y utilizan el formato de respuestas común mediante `handler`.
 - `services`: validaciones, permisos de negocio, precios, disponibilidad, estados y transacciones.
-- `repositories`: lectura y escritura de entidades en SQLite; `RecordRepository` comparte las operaciones de almacenamiento.
+- `repositories`: lectura y escritura asíncrona de entidades en PostgreSQL o SQLite; `RecordRepository` comparte las operaciones de almacenamiento.
 - `models`: entidades de dominio; usuarios diferenciados por perfil, reservas, eventos, flyers y entradas.
 - `middlewares`: autenticación, límite de intentos, errores y rutas inexistentes.
 - `exceptions`: errores con estado HTTP.
 - `responses`: respuestas HTTP consistentes.
 - `database.js`: conexión, esquema, secuencias e índices únicos. Las reservas por mesa/fecha y cliente/fecha y las entradas por cliente/evento se protegen también en la base.
 
-SQLite almacena documentos JSON validados en una tabla con claves de colección e identificador. Las secuencias persisten y no reutilizan IDs eliminados. Las operaciones que afectan disponibilidad utilizan `BEGIN IMMEDIATE` y rollback para que las verificaciones y las escrituras sean indivisibles.
+Ambos motores almacenan documentos JSON (JSONB en PostgreSQL) con colección e identificador; las secuencias persisten y no reutilizan IDs eliminados. `AsyncLocalStorage` conserva la conexión de cada transacción anidada. PostgreSQL usa una conexión del pool y un advisory lock transaccional compartido por las instancias para serializar las escrituras del negocio. SQLite usa `BEGIN IMMEDIATE` y una cola local para evitar intercalar transacciones asíncronas. Un fallo revierte todas las escrituras.
+
+El esquema alojado se define en `sql/postgres.sql`. Se aplica como dueño de la base después de crear un rol LOGIN `brickwell_backend` con contraseña privada aleatoria. El rol de la aplicación solo tiene CRUD en `brickwell`, con RLS; no tiene DDL ni acceso a otros esquemas. No se usan claves `service_role` ni el usuario `postgres` desde la aplicación. El esquema privado no se expone a la Data API.
+
+Los catálogos se inicializan una sola vez en cada base; no se reemplazan en cada despliegue. La demo local y Supabase son bases independientes. Los registros de SQLite no se importan ni se borran automáticamente.
 
 ## Endpoints
 
@@ -129,3 +135,13 @@ npm audit --omit=dev
 ```
 
 Las pruebas usan SQLite en memoria salvo la prueba de reinicio, que utiliza una base temporal fuera del proyecto y la elimina al terminar. No modifican la base normal.
+
+## Verificación del almacenamiento remoto
+
+```bash
+npm run test:cloud
+```
+
+Prueba optativa con `DATABASE_URL` en `.env`, dirigida a una base de pruebas. Verifica el contrato HTTP, datos y sesiones desde nuevos procesos, conflicto de reservas entre dos procesos, cupo de evento, rollback y logout persistente. Sus registros usan UUID y se eliminan al terminar. La suite habitual `npm test` siempre fuerza SQLite aislado y nunca usa la conexión remota del entorno.
+
+El endpoint `/` devuelve `storage: "postgres"` o `"sqlite"` además de la revisión del despliegue. No publica contraseñas ni la URL de conexión.

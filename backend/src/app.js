@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import { storage } from "./database.js";
 import routes from "./routes/index.js";
 import { notFoundHandler } from "./middlewares/notFoundHandler.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
@@ -26,6 +27,7 @@ app.get("/", (req, res) => {
     data: {
       message: "API de Brickell's funcionando correctamente.",
       revision: process.env.RENDER_GIT_COMMIT || "local",
+      storage,
     },
   });
 });

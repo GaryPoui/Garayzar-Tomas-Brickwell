@@ -2,9 +2,9 @@ import Reservas from '../repositories/ReservaRepository.js'
 import Entradas from '../repositories/EntradaRepository.js'
 import Usuarios from '../repositories/UsuarioRepository.js'
 export default {
-  obtener() {
-    const reservas = Reservas.findAll()
-    const entradas = Entradas.findAll()
+  async obtener() {
+    const reservas = await Reservas.findAll()
+    const entradas = await Entradas.findAll()
     const vigentes = reservas.filter((item) => item.estado !== 'CANCELADA')
     return {
       reservas: reservas.length,
@@ -16,7 +16,7 @@ export default {
         (total, item) => total + item.precioTotal - item.anticipo,
         0,
       ),
-      clientes: Usuarios.findAll()
+      clientes: (await Usuarios.findAll())
         .filter((user) => user.rol === 'CLIENTE')
         .map((user) => ({
           id: user.id,

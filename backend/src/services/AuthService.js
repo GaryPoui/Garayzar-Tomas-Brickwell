@@ -36,12 +36,14 @@ export async function createUser(data, rol = 'CLIENTE', bootstrap = false) {
     age(data.fechaNacimiento)
     phone(data.telefono)
   }
-  if (Usuarios.findByEmail(email)) throw new ConflictError('Ya existe una cuenta con ese email.')
+  if (await Usuarios.findByEmail(email))
+    throw new ConflictError('Ya existe una cuenta con ese email.')
   const salt = randomBytes(16).toString('hex')
   const hash = (await deriveKey(password, salt, 64)).toString('hex')
-  return transaction(() => {
-    if (Usuarios.findByEmail(email)) throw new ConflictError('Ya existe una cuenta con ese email.')
-    return Usuarios.create(
+  return transaction(async () => {
+    if (await Usuarios.findByEmail(email))
+      throw new ConflictError('Ya existe una cuenta con ese email.')
+    return await Usuarios.create(
       new models[rol]({
         nombre,
         email,
@@ -54,12 +56,12 @@ export async function createUser(data, rol = 'CLIENTE', bootstrap = false) {
     )
   })
 }
-function startSession(user) {
+async function startSession(user) {
   const token = randomBytes(32).toString('hex')
-  transaction(() => {
-    for (const session of Sesiones.findAll())
-      if (session.expires <= Date.now()) Sesiones.delete(session.id)
-    Sesiones.create({
+  await transaction(async () => {
+    for (const session of await Sesiones.findAll())
+      if (session.expires <= Date.now()) await Sesiones.delete(session.id)
+    await Sesiones.create({
       key: digest(token),
       usuario: user.id,
       expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
@@ -70,25 +72,25 @@ function startSession(user) {
 export const register = async (data) => startSession(await createUser(data))
 export async function login(data) {
   const { email, password } = credentials(data)
-  const user = Usuarios.findByEmail(email)
+  const user = await Usuarios.findByEmail(email)
   const hash = await deriveKey(password, user?.salt || 'brickwell-unknown-user', 64)
   if (!user?.activo || !timingSafeEqual(hash, Buffer.from(user.hash, 'hex')))
     throw new AppError('Email o contraseña incorrectos.', 401)
-  return startSession(user)
+  return await startSession(user)
 }
-export function authenticate(token) {
+export async function authenticate(token) {
   const session =
     typeof token === 'string' && /^[a-f0-9]{64}$/.test(token)
-      ? Sesiones.findByKey(digest(token))
+      ? await Sesiones.findByKey(digest(token))
       : null
-  const user = session && Usuarios.findById(session.usuario)
+  const user = session && (await Usuarios.findById(session.usuario))
   if (!session || session.expires <= Date.now() || !user?.activo) {
-    if (session) Sesiones.delete(session.id)
+    if (session) await Sesiones.delete(session.id)
     throw new AppError('Iniciá sesión para continuar.', 401)
   }
   return { user: publicUser(user), sessionId: session.id }
 }
-export const logout = (id) => Sesiones.delete(id)
+export const logout = async (id) => await Sesiones.delete(id)
 for (const [prefix, rol, nombre] of [
   ['ADMIN', 'ADMIN', 'Administración'],
   ['RECEPCION', 'RECEPCIONISTA', 'Recepción'],
@@ -97,6 +99,6 @@ for (const [prefix, rol, nombre] of [
   const password = process.env[`${prefix}_PASSWORD`]
   if (Boolean(email) !== Boolean(password))
     throw new Error(`Configurá ${prefix}_EMAIL y ${prefix}_PASSWORD juntos.`)
-  if (email && !Usuarios.findByEmail(email.trim().toLowerCase()))
+  if (email && !(await Usuarios.findByEmail(email.trim().toLowerCase())))
     await createUser({ email, password, nombre }, rol, true)
 }

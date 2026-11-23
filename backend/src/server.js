@@ -6,9 +6,9 @@ const PORT = process.env.PORT || 3000
 app.listen(PORT, process.env.HOST || '0.0.0.0', () => {
   console.log(`Servidor de Brickell's ejecutándose en http://localhost:${PORT}`)
 })
-const reminders = setInterval(() => {
+const reminders = setInterval(async () => {
   try {
-    recordatorios()
+    await recordatorios()
   } catch (error) {
     console.error('No se pudieron generar los recordatorios.', error)
   }

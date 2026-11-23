@@ -1,6 +1,6 @@
 # BRICKWEEL
 
-Sistema de reservas de mesas, carta digital, eventos y entradas para un pub bar y boliche. React + Vite en `frontend`; API Express con capas MVC y persistencia SQLite en `backend`.
+Sistema de reservas de mesas, carta digital, eventos y entradas para un pub bar y boliche. React + Vite en `frontend`; API Express con capas MVC en `backend`, PostgreSQL de Supabase para datos alojados y SQLite para la demo local.
 
 ## Ejecutar la entrega
 
@@ -66,7 +66,13 @@ Los clientes crean su propia cuenta en **Crear cuenta**. Estas claves son públi
 
 ## Persistencia y alcance operativo
 
-La base local se guarda en `backend/data/brickwell.sqlite`, fuera de Git. Cuentas, sesiones, reservas, catálogo, eventos, entradas, políticas y avisos sobreviven al reinicio del proceso cuando se conserva ese archivo. `DATABASE_PATH=:memory:` se utiliza exclusivamente para pruebas aisladas.
+El backend usa **Supabase PostgreSQL** cuando se configura `DATABASE_URL`. Usuarios, hashes de contraseña, sesiones, reservas, catálogo, eventos, entradas, políticas y avisos se guardan en la base remota; reiniciar o desplegar Render no elimina esos datos. El esquema `brickwell` es privado, tiene RLS y solo el rol del backend puede acceder. React continúa consumiendo Express: no recibe credenciales de base de datos.
+
+Proyecto provisionado: [Brickwell en Supabase](https://supabase.com/dashboard/project/uyvboesqimqanwqauzqz), región São Paulo, en la organización gratuita autorizada. El plan Free tiene 500 MB de base y puede pausarse tras una semana sin actividad ([límites oficiales](https://supabase.com/pricing)). No se contrataron servicios pagos.
+
+Para usar la base remota localmente: `npm --prefix backend start`, con la conexión privada en `backend/.env` (ignorado por Git). La demo `npm --prefix backend run demo` usa SQLite local y cuentas de ejemplo; no carga `.env`. Las bases son independientes.
+
+Sin `DATABASE_URL`, SQLite guarda los datos en `backend/data/brickwell.sqlite`. `DATABASE_PATH=:memory:` se reserva para pruebas. Render exige `DATABASE_URL` para evitar volver accidentalmente al disco efímero. No borrar la base existente; los datos anteriores de SQLite no se copian automáticamente a Supabase.
 
 Los pagos se coordinan con el local. Una entrada con precio mayor a cero queda **pendiente de pago** hasta que el personal acredita el dinero recibido; las gratuitas quedan confirmadas. No hay una pasarela de cobro ni devoluciones automáticas. Los avisos son internos a la aplicación, no correos, SMS ni mensajes de WhatsApp.
 
@@ -84,6 +90,10 @@ npm --prefix frontend run test:e2e
 git diff --check
 ```
 
+Prueba adicional contra Supabase: `npm --prefix backend run test:cloud`, con `DATABASE_URL` en `backend/.env` y una base destinada a pruebas. Comprueba registro/login por HTTP, persistencia y perfil entre procesos, privacidad, reservas simultáneas, cupo de entradas, rollback y revocación de sesión. Crea registros con identificadores aleatorios y los limpia al terminar; no ejecutar sobre una base con usuarios reales.
+
+Revisión de las partes 1–4: flujos existentes cubiertos por pruebas HTTP y 21 recorridos de Playwright desde React. Se mantienen las capas MVC, los servicios HTTP centralizados, las validaciones del servidor y los mensajes de éxito/error.
+
 Las E2E inician una API aislada en 3101 y Vite en 5175. Funcionan en Windows y Linux y no modifican la base de uso habitual. Si Chromium no está instalado: `npm --prefix frontend exec playwright install chromium`.
 
 ## Publicación
@@ -92,9 +102,9 @@ Frontend existente: <https://garypoui.github.io/Garayzar-Tomas-Brickwell/>. API 
 
 Los cambios locales deben publicarse para aparecer en esas URLs. GitHub Pages requiere `VITE_API_URL` con la URL de la API y CORS debe permitir el origen del frontend. `render.yaml` conserva la configuración del servicio gratuito existente.
 
-**SQLite requiere almacenamiento persistente en el hosting.** Un archivo en el disco efímero de Render gratuito puede perderse durante reinicios, suspensiones o despliegues. Para conservar datos allí se necesita un volumen persistente y `DATABASE_PATH` apuntando a ese volumen, o migrar el repositorio a una base alojada. Este cambio de infraestructura no está provisionado por el código y no se contrataron servicios pagos.
+`render.yaml` mantiene **plan free** y declara `DATABASE_URL` como secreto (`sync: false`): se carga en Environment del servicio de Render, nunca en GitHub Pages ni en variables `VITE_*`. El certificado público de Supabase está incluido en `backend/certs`; la conexión valida el certificado y el nombre del servidor. El healthcheck `/` informa `storage: "postgres"` cuando se utiliza la base alojada.
 
-La configuración opcional [render.persistent.yaml](render.persistent.yaml) deja preparado el servicio con plan Starter, disco de 1 GB montado en `/var/data` y la base en `/var/data/brickwell.sqlite`. No reemplaza automáticamente a `render.yaml` ni activa cargos al subir el repositorio. Su aplicación requiere aprobar el costo y acceso al servicio. Los datos ya guardados deben respaldarse antes de cambiar el disco o la ruta de la base.
+La alternativa histórica `render.persistent.yaml` requiere un plan pago y ya no es necesaria para conservar los datos usando Supabase.
 
 ## Video de defensa
 
